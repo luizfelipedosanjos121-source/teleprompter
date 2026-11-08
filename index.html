@@ -1,873 +1,152 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎵 Teleprompter - Apps Script</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 15px;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .header h1 {
-            color: #667eea;
-            margin-bottom: 5px;
-            font-size: 28px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 13px;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            padding: 10px 20px;
-            border: none;
-            background: white;
-            color: #667eea;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-btn.active {
-            background: #667eea;
-            color: white;
-            transform: scale(1.05);
-        }
-
-        .tab-btn:hover {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .tab-content {
-            display: none;
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* ABA 1: TELEPROMPTER */
-        .controls {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .select-group,
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .select-group label,
-        .slider-group label {
-            font-weight: bold;
-            min-width: 140px;
-            color: #333;
-        }
-
-        #musica-select {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #667eea;
-            border-radius: 5px;
-            cursor: pointer;
-            min-width: 200px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            flex: 1;
-            min-width: 100px;
-        }
-
-        .btn-play {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .btn-play:hover:not(:disabled) {
-            background: #45a049;
-        }
-
-        .btn-pause {
-            background: #ff9800;
-            color: white;
-        }
-
-        .btn-pause:hover:not(:disabled) {
-            background: #e68900;
-        }
-
-        .btn-stop {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-stop:hover:not(:disabled) {
-            background: #da190b;
-        }
-
-        .btn-refresh {
-            background: #2196F3;
-            color: white;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            cursor: pointer;
-            min-width: 150px;
-        }
-
-        .range-value {
-            min-width: 50px;
-            text-align: right;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .teleprompter {
-            background: #1a1a1a;
-            border-radius: 10px;
-            padding: 40px;
-            min-height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            border: 3px solid #667eea;
-            overflow: hidden;
-        }
-
-        .text-display {
-            color: #00ff00;
-            text-align: center;
-            line-height: 1.8;
-            font-size: 32px;
-            font-weight: 500;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-            animation: scroll-in 0.5s ease;
-        }
-
-        @keyframes scroll-in {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .info {
-            background: #f5f5f5;
-            padding: 12px;
-            border-radius: 5px;
-            display: flex;
-            gap: 20px;
-            font-weight: bold;
-            flex-wrap: wrap;
-        }
-
-        .info p {
-            margin: 0;
-            color: #333;
-        }
-
-        .info span {
-            color: #667eea;
-        }
-
-        /* ABA 2: GERENCIAR */
-        .form-group {
-            display: grid;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        input[type="text"],
-        textarea {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: inherit;
-            font-size: 14px;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        input[type="text"]:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-            padding: 12px;
-            margin-top: 10px;
-        }
-
-        .btn-primary:hover {
-            background: #764ba2;
-        }
-
-        .musicas-lista {
-            display: grid;
-            gap: 10px;
-        }
-
-        .musica-item {
-            background: #f9f9f9;
-            padding: 12px;
-            border-left: 4px solid #667eea;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .musica-info {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .musica-info h4 {
-            margin: 0;
-            color: #667eea;
-        }
-
-        .musica-info p {
-            margin: 5px 0 0 0;
-            color: #666;
-            font-size: 13px;
-        }
-
-        .musica-acoes {
-            display: flex;
-            gap: 5px;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-editar {
-            background: #2196F3;
-            color: white;
-        }
-
-        .btn-deletar {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-editar:hover,
-        .btn-deletar:hover {
-            opacity: 0.8;
-        }
-
-        .msg {
-            padding: 12px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            display: none;
-        }
-
-        .msg.sucesso {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        .msg.erro {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #667eea;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 30px;
-            height: 30px;
-            border: 3px solid rgba(102, 126, 234, 0.3);
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsivo */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 20px;
-            }
-
-            .teleprompter {
-                min-height: 250px;
-                padding: 20px;
-            }
-
-            .text-display {
-                font-size: 24px;
-            }
-
-            .btn {
-                min-width: 80px;
-                padding: 8px 12px;
-            }
-
-            .info {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .musica-item {
-                flex-direction: column;
-            }
-
-            .musica-acoes {
-                width: 100%;
-            }
-
-            .btn-sm {
-                flex: 1;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎵 Teleprompter para Músicos</h1>
-            <p>Conectado ao Google Apps Script</p>
-        </div>
-
-        <div class="tabs">
-            <button class="tab-btn active" onclick="mudarAba('teleprompter')">▶️ Teleprompter</button>
-            <button class="tab-btn" onclick="mudarAba('gerenciar')">⚙️ Gerenciar Músicas</button>
-            <button class="tab-btn" onclick="mudarAba('config')">⚡ Configurações</button>
-        </div>
-
-        <!-- ABA 1: TELEPROMPTER -->
-        <div id="teleprompter" class="tab-content active">
-            <div class="controls">
-                <div class="select-group">
-                    <label>Escolha a Música:</label>
-                    <select id="musica-select">
-                        <option value="">-- Carregando... --</option>
-                    </select>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn btn-play" id="play-btn" onclick="iniciar()">▶️ Iniciar</button>
-                    <button class="btn btn-pause" id="pause-btn" onclick="pausar()" disabled>⏸️ Pausar</button>
-                    <button class="btn btn-stop" id="stop-btn" onclick="parar()" disabled>⏹️ Parar</button>
-                    <button class="btn btn-refresh" onclick="carregarMusicas()">🔄 Recarregar</button>
-                </div>
-
-                <div class="slider-group">
-                    <label>Velocidade:</label>
-                    <input type="range" id="speed-slider" min="0.5" max="3" step="0.5" value="1">
-                    <span class="range-value" id="speed-value">1x</span>
-                </div>
-
-                <div class="slider-group">
-                    <label>Tamanho da Fonte:</label>
-                    <input type="range" id="size-slider" min="16" max="60" step="2" value="32">
-                    <span class="range-value" id="size-value">32px</span>
-                </div>
-
-                <div class="slider-group">
-                    <label>Tempo por Linha (ms):</label>
-                    <input type="range" id="tempo-slider" min="500" max="3000" step="100" value="1500">
-                    <span class="range-value" id="tempo-value">1500ms</span>
-                </div>
-            </div>
-
-            <div class="teleprompter">
-                <div class="text-display" id="text-display">
-                    <p>Selecione uma música para começar...</p>
-                </div>
-            </div>
-
-            <div class="info">
-                <p>⏱️ Tempo: <span id="tempo">00:00</span></p>
-                <p>📝 Linha: <span id="linha-info">--</span></p>
-                <p>📊 Status: <span id="status-info">Parado</span></p>
-            </div>
-        </div>
-
-        <!-- ABA 2: GERENCIAR -->
-        <div id="gerenciar" class="tab-content">
-            <h2 style="margin-bottom: 15px;">➕ Adicionar Nova Música</h2>
-            
-            <div id="msg-add" class="msg"></div>
-
-            <div class="form-group">
-                <label>Nome da Música:</label>
-                <input type="text" id="nome-input" placeholder="Ex: Imagine">
-            </div>
-
-            <div class="form-group">
-                <label>Artista:</label>
-                <input type="text" id="artista-input" placeholder="Ex: John Lennon">
-            </div>
-
-            <div class="form-group">
-                <label>Letras (separe as linhas com Enter):</label>
-                <textarea id="letras-input" placeholder="Digite as letras aqui...&#10;Uma linha por linha"></textarea>
-            </div>
-
-            <button class="btn btn-primary" onclick="adicionarMusica()">✅ Adicionar Música</button>
-
-            <hr style="margin: 30px 0; border: none; border-top: 2px solid #ddd;">
-
-            <h2 style="margin-bottom: 15px;">📋 Minhas Músicas</h2>
-            
-            <div id="msg-list" class="msg"></div>
-            <div id="musicas-lista" class="musicas-lista">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Carregando músicas...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ABA 3: CONFIGURAÇÕES -->
-        <div id="config" class="tab-content">
-            <h2>⚙️ Configurações</h2>
-            
-            <div class="form-group" style="margin-top: 20px;">
-                <h3>ℹ️ Informações do Sistema</h3>
-                <p style="margin-top: 10px; color: #666;">
-                    <strong>Tecnologia:</strong> Google Apps Script<br>
-                    <strong>Banco de Dados:</strong> Google Sheets<br>
-                    <strong>Interface:</strong> HTML5 + JavaScript<br>
-                </p>
-            </div>
-
-            <div class="form-group" style="margin-top: 20px;">
-                <h3>💾 Sincronização</h3>
-                <p style="margin-top: 10px; color: #666;">
-                    As músicas são sincronizadas automaticamente com a planilha do Google Sheets.
-                </p>
-                <button class="btn btn-primary" onclick="sincronizar()" style="margin-top: 10px;">
-                    🔄 Sincronizar Agora
-                </button>
-            </div>
-
-            <div class="form-group" style="margin-top: 20px;">
-                <h3>📱 Atalhos de Teclado</h3>
-                <p style="margin-top: 10px; color: #666;">
-                    <strong>Espaço:</strong> Play/Pause<br>
-                    <strong>ESC:</strong> Stop<br>
-                </p>
-            </div>
-
-            <div class="form-group" style="margin-top: 20px;">
-                <h3>🎨 Temas</h3>
-                <p style="margin-top: 10px; color: #666;">
-                    <label>
-                        <input type="checkbox" id="tema-dark" onchange="mudarTema()"> Modo Escuro
-                    </label>
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // 🎵 VARIÁVEIS GLOBAIS
-        let musicas = [];
-        let musicaAtual = null;
-        let linhaAtual = 0;
-        let tocando = false;
-        let pausado = false;
-        let velocidade = 1;
-        let tempoLinha = 1500;
-        let intervalo = null;
-
-        // 🚀 INICIALIZAR
-        document.addEventListener('DOMContentLoaded', () => {
-            carregarMusicas();
-            configurarEventos();
-            
-            // Atalhos de teclado
-            document.addEventListener('keydown', (e) => {
-                if (e.code === 'Space') {
-                    e.preventDefault();
-                    if (tocando && pausado) pausar();
-                    else if (tocando) pausar();
-                    else iniciar();
-                }
-                if (e.code === 'Escape') parar();
-            });
+// 📊 ID DA PLANILHA
+const SHEET_ID = 'SEU_ID_DA_PLANILHA_AQUI'; // Mude para o ID da sua planilha
+const SHEET_NAME = 'Músicas'; // Nome da aba
+
+// 🎵 OBTER TODAS AS MÚSICAS
+function obterMusicas() {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const dados = sheet.getDataRange().getValues();
+    
+    const musicas = [];
+    
+    // Pula o cabeçalho (linha 1)
+    for (let i = 1; i < dados.length; i++) {
+      const [id, nome, artista, letrasTexto, dataCriacao] = dados[i];
+      
+      if (nome && artista && letrasTexto) {
+        musicas.push({
+          id: id || i,
+          nome: nome,
+          artista: artista,
+          letras: letrasTexto.split('\n').filter(l => l.trim() !== ''),
+          dataCriacao: dataCriacao || new Date().toLocaleDateString('pt-BR')
         });
+      }
+    }
+    
+    return musicas;
+  } catch (erro) {
+    Logger.log('Erro ao obter músicas: ' + erro);
+    return [];
+  }
+}
 
-        // 📊 CARREGAR MÚSICAS DO GOOGLE SHEETS
-        function carregarMusicas() {
-            google.script.run
-                .withSuccessHandler((resultado) => {
-                    musicas = resultado;
-                    preencherSelect();
-                    atualizarListaMusicasGerenciar();
-                })
-                .withFailureHandler((error) => {
-                    console.error('Erro:', error);
-                    alert('❌ Erro ao carregar músicas');
-                })
-                .obterMusicas();
-        }
+// ➕ ADICIONAR MÚSICA
+function adicionarMusica(nome, artista, letras) {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    
+    // Validar
+    if (!nome || !artista || !letras) {
+      return { sucesso: false, mensagem: 'Campos obrigatórios não preenchidos' };
+    }
+    
+    const id = Date.now(); // ID único baseado em timestamp
+    const dataCriacao = new Date().toLocaleDateString('pt-BR');
+    
+    // Adicionar linha
+    sheet.appendRow([
+      id,
+      nome,
+      artista,
+      letras,
+      dataCriacao
+    ]);
+    
+    return { sucesso: true, mensagem: 'Música adicionada com sucesso!' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
 
-        // 📋 PREENCHER SELECT
-        function preencherSelect() {
-            const select = document.getElementById('musica-select');
-            select.innerHTML = '<option value="">-- Selecione uma música --</option>';
+// 🗑️ DELETAR MÚSICA
+function deletarMusica(id) {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const dados = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < dados.length; i++) {
+      if (dados[i][0] == id) {
+        sheet.deleteRow(i + 1);
+        return { sucesso: true, mensagem: 'Música deletada com sucesso!' };
+      }
+    }
+    
+    return { sucesso: false, mensagem: 'Música não encontrada' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
 
-            musicas.forEach((musica, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = `🎵 ${musica.nome} - ${musica.artista}`;
-                select.appendChild(option);
-            });
-        }
+// ✏️ ATUALIZAR MÚSICA
+function atualizarMusica(id, nome, artista, letras) {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const dados = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < dados.length; i++) {
+      if (dados[i][0] == id) {
+        sheet.getRange(i + 1, 2, 1, 3).setValues([[nome, artista, letras]]);
+        return { sucesso: true, mensagem: 'Música atualizada com sucesso!' };
+      }
+    }
+    
+    return { sucesso: false, mensagem: 'Música não encontrada' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
 
-        // ⚙️ CONFIGURAR EVENTOS
-        function configurarEventos() {
-            document.getElementById('speed-slider').addEventListener('input', (e) => {
-                velocidade = parseFloat(e.target.value);
-                document.getElementById('speed-value').textContent = `${velocidade}x`;
-            });
+// 📤 EXPORTAR PARA WEB (via HTTP)
+function doGet(e) {
+  try {
+    const acao = e.parameter.acao;
+    
+    if (acao === 'obter') {
+      const musicas = obterMusicas();
+      return ContentService.createTextOutput(JSON.stringify({
+        sucesso: true,
+        musicas: musicas
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      sucesso: false,
+      mensagem: 'Ação não reconhecida'
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (erro) {
+    return ContentService.createTextOutput(JSON.stringify({
+      sucesso: false,
+      mensagem: 'Erro: ' + erro.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
-            document.getElementById('size-slider').addEventListener('input', (e) => {
-                const tamanho = e.target.value;
-                document.getElementById('size-value').textContent = `${tamanho}px`;
-                document.querySelector('.text-display').style.fontSize = `${tamanho}px`;
-            });
+function doPost(e) {
+  return doGet(e);
+}
 
-            document.getElementById('tempo-slider').addEventListener('input', (e) => {
-                tempoLinha = parseInt(e.target.value);
-                document.getElementById('tempo-value').textContent = `${tempoLinha}ms`;
-            });
-
-            document.getElementById('musica-select').addEventListener('change', (e) => {
-                if (e.target.value !== '') {
-                    musicaAtual = musicas[e.target.value];
-                    exibirMusica();
-                }
-            });
-        }
-
-        // 🎵 EXIBIR MÚSICA SELECIONADA
-        function exibirMusica() {
-            if (!musicaAtual) return;
-            document.getElementById('text-display').innerHTML = `
-                <div>
-                    <h2 style="color: #00ff00; margin-bottom: 10px;">🎵 ${musicaAtual.nome}</h2>
-                    <p style="font-size: 0.6em; color: #666;">por ${musicaAtual.artista}</p>
-                </div>
-            `;
-        }
-
-        // ▶️ INICIAR
-        function iniciar() {
-            if (!musicaAtual) {
-                alert('Selecione uma música primeiro!');
-                return;
-            }
-
-            if (!tocando) {
-                tocando = true;
-                pausado = false;
-                linhaAtual = 0;
-
-                document.getElementById('play-btn').disabled = true;
-                document.getElementById('pause-btn').disabled = false;
-                document.getElementById('stop-btn').disabled = false;
-                document.getElementById('musica-select').disabled = true;
-                document.getElementById('status-info').textContent = '▶️ Tocando';
-
-                proximaLinha();
-            } else if (pausado) {
-                pausado = false;
-                document.getElementById('pause-btn').textContent = '⏸️ Pausar';
-                document.getElementById('status-info').textContent = '▶️ Tocando';
-                proximaLinha();
-            }
-        }
-
-        // ⏸️ PAUSAR
-        function pausar() {
-            if (tocando) {
-                pausado = !pausado;
-                clearTimeout(intervalo);
-
-                if (pausado) {
-                    document.getElementById('pause-btn').textContent = '▶️ Continuar';
-                    document.getElementById('status-info').textContent = '⏸️ Pausado';
-                } else {
-                    document.getElementById('pause-btn').textContent = '⏸️ Pausar';
-                    document.getElementById('status-info').textContent = '▶️ Tocando';
-                    proximaLinha();
-                }
-            }
-        }
-
-        // ⏹️ PARAR
-        function parar() {
-            tocando = false;
-            pausado = false;
-            clearTimeout(intervalo);
-
-            document.getElementById('play-btn').disabled = false;
-            document.getElementById('pause-btn').disabled = true;
-            document.getElementById('pause-btn').textContent = '⏸️ Pausar';
-            document.getElementById('stop-btn').disabled = true;
-            document.getElementById('musica-select').disabled = false;
-
-            linhaAtual = 0;
-            document.getElementById('tempo').textContent = '00:00';
-            document.getElementById('linha-info').textContent = '--';
-            document.getElementById('status-info').textContent = '⏹️ Parado';
-
-            exibirMusica();
-        }
-
-        // 📄 PRÓXIMA LINHA
-        function proximaLinha() {
-            if (linhaAtual < musicaAtual.letras.length && tocando && !pausado) {
-                const linha = musicaAtual.letras[linhaAtual];
-                exibirLinha(linha);
-
-                document.getElementById('tempo').textContent = formatarTempo(linhaAtual);
-                document.getElementById('linha-info').textContent = `${linhaAtual + 1}/${musicaAtual.letras.length}`;
-
-                linhaAtual++;
-
-                const tempoProxima = tempoLinha / velocidade;
-                intervalo = setTimeout(() => proximaLinha(), tempoProxima);
-            } else if (linhaAtual >= musicaAtual.letras.length && tocando) {
-                parar();
-                alert('✅ Música finalizada!');
-            }
-        }
-
-        // 🖊️ EXIBIR LINHA
-        function exibirLinha(linha) {
-            const display = document.getElementById('text-display');
-            if (linha.trim() === '') {
-                display.innerHTML = '<p style="color: #555;">[ Pausa ]</p>';
-            } else {
-                display.innerHTML = `<p>${linha}</p>`;
-            }
-            display.style.animation = 'none';
-            setTimeout(() => {
-                display.style.animation = 'scroll-in 0.5s ease';
-            }, 10);
-        }
-
-        // ⏱️ FORMATAR TEMPO
-        function formatarTempo(segundos) {
-            const minutos = Math.floor(segundos / 60);
-            const segs = segundos % 60;
-            return `${String(minutos).padStart(2, '0')}:${String(segs).padStart(2, '0')}`;
-        }
-
-        // 📑 MUDAR ABA
-        function mudarAba(aba) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-
-            document.getElementById(aba).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // ➕ ADICIONAR MÚSICA
-        function adicionarMusica() {
-            const nome = document.getElementById('nome-input').value.trim();
-            const artista = document.getElementById('artista-input').value.trim();
-            const letras = document.getElementById('letras-input').value.trim();
-
-            if (!nome || !artista || !letras) {
-                mostrarMsg('msg-add', '❌ Preencha todos os campos', 'erro');
-                return;
-            }
-
-            google.script.run
-                .withSuccessHandler((resultado) => {
-                    if (resultado.sucesso) {
-                        mostrarMsg('msg-add', '✅ ' + resultado.mensagem, 'sucesso');
-                        document.getElementById('nome-input').value = '';
-                        document.getElementById('artista-input').value = '';
-                        document.getElementById('letras-input').value = '';
-                        carregarMusicas();
-                    } else {
-                        mostrarMsg('msg-add', '❌ ' + resultado.mensagem, 'erro');
-                    }
-                })
-                .adicionarMusica(nome, artista, letras);
-        }
-
-        // 📋 ATUALIZAR LISTA DE MÚSICAS
-        function atualizarListaMusicasGerenciar() {
-            const lista = document.getElementById('musicas-lista');
-            
-            if (musicas.length === 0) {
-                lista.innerHTML = '<p style="color: #999;">Nenhuma música adicionada</p>';
-                return;
-            }
-
-            lista.innerHTML = musicas.map((musica, index) => `
-                <div class="musica-item">
-                    <div class="musica-info">
-                        <h4>${musica.nome}</h4>
-                        <p>🎤 ${musica.artista}</p>
-                        <p>📝 ${musica.letras.length} linhas</p>
-                    </div>
-                    <div class="musica-acoes">
-                        <button class="btn-sm btn-editar" onclick="abrirEdicao(${musica.id})">✏️ Editar</button>
-                        <button class="btn-sm btn-deletar" onclick="deletarMusica(${musica.id})">🗑️ Deletar</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // 🗑️ DELETAR MÚSICA
-        function deletarMusica(id) {
-            if (!confirm('Tem certeza que deseja deletar esta música?')) return;
-
-            google.script.run
-                .withSuccessHandler((resultado) => {
-                    mostrarMsg('msg-list', '✅ ' + resultado.mensagem, 'sucesso');
-                    carregarMusicas();
-                })
-                .deletarMusica(id);
-        }
-
-        // ✏️ ABRIR EDIÇÃO (básico)
-        function abrirEdicao(id) {
-            const musica = musicas.find(m => m.id === id);
-            if (musica) {
-                document.getElementById('nome-input').value = musica.nome;
-                document.getElementById('artista-input').value = musica.artista;
-                document.getElementById('letras-input').value = musica.letras.join('\n');
-                mudarAba('gerenciar');
-                document.querySelector('.tab-content.active').scrollIntoView();
-            }
-        }
-
-        // 🔄 SINCRONIZAR
-        function sincronizar() {
-            carregarMusicas();
-            alert('✅ Sincronização concluída!');
-        }
-
-        // 💬 MOSTRAR MENSAGEM
-        function mostrarMsg(id, mensagem, tipo) {
-            const msg = document.getElementById(id);
-            msg.textContent = mensagem;
-            msg.className = `msg ${tipo}`;
-            setTimeout(() => msg.classList.remove(tipo), 3000);
-        }
-
-        // 🌙 MUDAR TEMA
-        function mudarTema() {
-            const temaDark = document.getElementById('tema-dark').checked;
-            if (temaDark) {
-                document.body.style.background = '#1a1a1a';
-            } else {
-                document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            }
-        }
-    </script>
-</body>
-</html>
+// 🏗️ INICIALIZAR PLANILHA (executar uma vez)
+function inicializarPlanilha() {
+  try {
+    const ss = SpreadsheetApp.create('Teleprompter - Músicas');
+    const sheet = ss.getActiveSheet();
+    
+    sheet.appendRow(['ID', 'Nome', 'Artista', 'Letras', 'Data Criação']);
+    
+    // Exemplo de música
+    sheet.appendRow([
+      Date.now(),
+      'Imagine',
+      'John Lennon',
+      'Imagine all the people\nLiving life in peace\nYou may say I\'m a dreamer\nBut I\'m not the only one',
+      new Date().toLocaleDateString('pt-BR')
+    ]);
+    
+    Logger.log('Planilha criada: ' + ss.getUrl());
+    alert('✅ Planilha criada! ID: ' + ss.getId());
+  } catch (erro) {
+    Logger.log('Erro: ' + erro);
+  }
+}
