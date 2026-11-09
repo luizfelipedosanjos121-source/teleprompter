@@ -1,152 +1,305 @@
-// 📊 ID DA PLANILHA
-const SHEET_ID = 'SEU_ID_DA_PLANILHA_AQUI'; // Mude para o ID da sua planilha
-const SHEET_NAME = 'Músicas'; // Nome da aba
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎵 Teleprompter do Músico</title>
+<style>
+:root{
+  --bg:#0b0e13; --panel:#141a22; --text:#e8e8e8;
+  --chord:#ffd166; --accent:#4cc2ff; --muted:#9aa4af;
+  --lyric-size:26px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Arial,sans-serif;min-height:100vh}
+button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 
-// 🎵 OBTER TODAS AS MÚSICAS
-function obterMusicas() {
-  try {
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-    const dados = sheet.getDataRange().getValues();
-    
-    const musicas = [];
-    
-    // Pula o cabeçalho (linha 1)
-    for (let i = 1; i < dados.length; i++) {
-      const [id, nome, artista, letrasTexto, dataCriacao] = dados[i];
-      
-      if (nome && artista && letrasTexto) {
-        musicas.push({
-          id: id || i,
-          nome: nome,
-          artista: artista,
-          letras: letrasTexto.split('\n').filter(l => l.trim() !== ''),
-          dataCriacao: dataCriacao || new Date().toLocaleDateString('pt-BR')
-        });
-      }
+/* Barra superior */
+#toolbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:10px;
+  background:rgba(20,26,34,.95);backdrop-filter:blur(6px);padding:8px 12px;border-bottom:1px solid #232b35;flex-wrap:wrap}
+#menuBtn{font-size:22px;padding:4px 10px;border-radius:8px}
+#menuBtn:hover{background:#232b35}
+.song-info{flex:1;min-width:120px}
+#songTitle{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#songMeta{font-size:12px;color:var(--muted)}
+.controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.controls button{background:#232b35;border-radius:8px;padding:6px 10px;font-size:14px}
+.controls button:hover{background:#2e3947}
+.controls button.active{background:var(--accent);color:#04263b;font-weight:700}
+#keyLabel{min-width:34px;text-align:center;color:var(--chord);font-weight:700}
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
+
+/* Lista de músicas */
+#sidebar{position:fixed;top:52px;left:0;bottom:0;width:260px;z-index:15;background:var(--panel);
+  border-right:1px solid #232b35;transform:translateX(-105%);transition:transform .25s ease;
+  display:flex;flex-direction:column}
+#sidebar.open{transform:translateX(0)}
+#sidebar h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:14px 14px 8px}
+#search{margin:0 14px 10px;padding:8px 10px;border-radius:8px;border:1px solid #2e3947;background:#0f141b;color:var(--text);outline:none}
+#songList{list-style:none;overflow-y:auto;flex:1}
+#songList li{padding:10px 16px;cursor:pointer;border-left:3px solid transparent}
+#songList li:hover{background:#1b232e}
+#songList li.active{border-left-color:var(--accent);background:#1b232e}
+#songList .artist{display:block;font-size:12px;color:var(--muted)}
+#hints{padding:10px 14px;font-size:11px;color:var(--muted);border-top:1px solid #232b35;line-height:1.6}
+
+/* Conteúdo */
+main{max-width:900px;margin:0 auto;padding:90px 24px 45vh}
+#sheet{font-size:var(--lyric-size);line-height:1.45;cursor:pointer}
+.lyric-line,.chord-line{white-space:pre-wrap;margin-bottom:.35em}
+.blank{height:1em}
+.section{display:inline-block;margin:1.2em 0 .4em;padding:2px 12px;font-size:.55em;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:20px}
+.seg{display:inline-flex;flex-direction:column;vertical-align:bottom}
+.chord{color:var(--chord);font-weight:700;font-size:.75em;line-height:1.15;min-height:1.15em;white-space:pre}
+.lyric{white-space:pre-wrap}
+body.hide-chords .chord{visibility:hidden}
+
+/* Barra de reprodução */
+#playback{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;
+  gap:12px;z-index:20;background:rgba(20,26,34,.95);border:1px solid #232b35;border-radius:40px;
+  padding:8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#playBtn{width:52px;height:52px;border-radius:50%;background:var(--accent);color:#04263b;
+  font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center}
+#backTop{font-size:18px;color:var(--muted);padding:8px}
+#backTop:hover{color:var(--text)}
+#speed{width:130px;accent-color:var(--accent)}
+#speedVal{font-size:12px;color:var(--muted);width:34px;text-align:center}
+@media(max-width:640px){#speed{width:80px}}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header id="toolbar">
+  <button id="menuBtn" title="Lista de músicas">☰</button>
+  <div class="song-info">
+    <div id="songTitle">—</div>
+    <div id="songMeta"></div>
+  </div>
+  <div class="controls">
+    <button id="trDown" title="Baixar tom">♭</button>
+    <span id="keyLabel"></span>
+    <button id="trUp" title="Subir tom">♯</button>
+    <button id="fontDown" title="Diminuir letra">A−</button>
+    <button id="fontUp" title="Aumentar letra">A+</button>
+    <button id="toggleChords" title="Mostrar/ocultar cifras">Cifras</button>
+    <button id="fsBtn" title="Tela cheia">⛶</button>
+  </div>
+</header>
+
+<aside id="sidebar">
+  <h2>🎵 Músicas</h2>
+  <input id="search" placeholder="Buscar...">
+  <ul id="songList"></ul>
+  <div id="hints">
+    <b>Espaço</b>: play/pausa<br>
+    <b>↑ ↓</b>: velocidade<br>
+    <b>← →</b>: mudar tom<br>
+    <b>F</b>: tela cheia • <b>0</b>: voltar ao início
+  </div>
+</aside>
+
+<main>
+  <div id="sheet"></div>
+</main>
+
+<div id="playback">
+  <button id="backTop" title="Voltar ao início">⏮</button>
+  <button id="playBtn" title="Tocar/Pausar">▶</button>
+  <input type="range" id="speed" min="10" max="200" value="60">
+  <span id="speedVal">60</span>
+</div>
+
+<script src="songs.js"></script>
+<script>
+const store = {
+  get(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} },
+  set(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
+};
+
+const SONGS = window.SONGS || [];
+const sidebar=document.getElementById('sidebar'), sheet=document.getElementById('sheet'),
+  playBtn=document.getElementById('playBtn'), speedSlider=document.getElementById('speed'),
+  speedVal=document.getElementById('speedVal'), keyLabel=document.getElementById('keyLabel'),
+  progressEl=document.getElementById('progress'), chordsBtn=document.getElementById('toggleChords'),
+  searchInput=document.getElementById('search');
+
+let current=0, transpose=0, scrolling=false, lastTs=null, wakeLock=null;
+let speed=Number(store.get('tp_speed',60));
+let fontSize=Number(store.get('tp_font',26));
+let showChords=store.get('tp_chords','1')==='1';
+
+/* ===== Cifras: transposição ===== */
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLATS={Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
+const CHORD_RE=/^([A-G][#b]?)([^/]*)(\/([A-G][#b]?))?$/;
+function isChord(t){ return CHORD_RE.test(t); }
+function transposeChord(chord,semi){
+  const m=chord.match(CHORD_RE); if(!m) return chord;
+  let [,root,suffix,,bass]=m;
+  root=FLATS[root]||root;
+  let i=NOTES.indexOf(root); if(i===-1) return chord;
+  let out=NOTES[(i+semi+120)%12]+(suffix||'');
+  if(bass){
+    bass=FLATS[bass]||bass;
+    let b=NOTES.indexOf(bass);
+    out+='/'+(b===-1?bass:NOTES[(b+semi+120)%12]);
+  }
+  return out;
+}
+
+/* ===== Renderização ===== */
+function parseChordLine(line){
+  const parts=[],re=/\[([^\]]+)\]/g;
+  let last=0,m,chord=null;
+  while((m=re.exec(line))!==null){
+    const txt=line.slice(last,m.index);
+    if(chord!==null||txt) parts.push({chord:chord,text:txt});
+    chord=m[1]; last=re.lastIndex;
+  }
+  const rest=line.slice(last);
+  if(chord!==null||rest) parts.push({chord:chord,text:rest});
+  return parts;
+}
+function renderSong(){
+  const s=SONGS[current]; if(!s) return;
+  const lines=s.content.replace(/^\n+|\n+$/g,'').split('\n');
+  const frag=document.createDocumentFragment();
+  lines.forEach(line=>{
+    const t=line.trim(), div=document.createElement('div');
+    if(t===''){ div.className='blank'; frag.appendChild(div); return; }
+    const sec=t.match(/^\[([^\]]+)\]$/);
+    if(sec && !isChord(sec[1])){
+      div.className='section'; div.textContent=sec[1]; frag.appendChild(div); return;
     }
-    
-    return musicas;
-  } catch (erro) {
-    Logger.log('Erro ao obter músicas: ' + erro);
-    return [];
-  }
+    if(t.includes('[')){
+      div.className='chord-line';
+      parseChordLine(line).forEach(p=>{
+        const seg=document.createElement('span'); seg.className='seg';
+        const ch=document.createElement('span'); ch.className='chord';
+        ch.textContent=p.chord?transposeChord(p.chord,transpose):'\u00A0';
+        const ly=document.createElement('span'); ly.className='lyric';
+        ly.textContent=p.text||'\u00A0';
+        seg.appendChild(ch); seg.appendChild(ly); div.appendChild(seg);
+      });
+    } else { div.className='lyric-line'; div.textContent=line; }
+    frag.appendChild(div);
+  });
+  sheet.innerHTML=''; sheet.appendChild(frag);
+}
+function loadSong(i){
+  current=i; transpose=Number(store.get('tp_tr_'+i,0));
+  stopScroll();
+  const s=SONGS[i];
+  document.getElementById('songTitle').textContent=s.title;
+  document.getElementById('songMeta').textContent=s.artist||'';
+  renderSong(); updateKey(); window.scrollTo(0,0); updateProgress();
+  document.querySelectorAll('#songList li').forEach((li,idx)=>li.classList.toggle('active',idx===i));
+}
+function updateKey(){
+  const s=SONGS[current];
+  keyLabel.textContent = s&&s.key ? transposeChord(s.key,transpose)
+    : (transpose>0?'+':'')+transpose;
+}
+function buildList(filter=''){
+  const ul=document.getElementById('songList'); ul.innerHTML='';
+  SONGS.forEach((s,i)=>{
+    if(filter && !(s.title+' '+(s.artist||'')).toLowerCase().includes(filter.toLowerCase())) return;
+    const li=document.createElement('li');
+    if(i===current) li.classList.add('active');
+    const st=document.createElement('strong'); st.textContent=s.title;
+    const ar=document.createElement('span'); ar.className='artist'; ar.textContent=s.artist||'';
+    li.appendChild(st); li.appendChild(ar);
+    li.onclick=()=>{ loadSong(i); if(window.innerWidth<900) sidebar.classList.remove('open'); };
+    ul.appendChild(li);
+  });
 }
 
-// ➕ ADICIONAR MÚSICA
-function adicionarMusica(nome, artista, letras) {
-  try {
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-    
-    // Validar
-    if (!nome || !artista || !letras) {
-      return { sucesso: false, mensagem: 'Campos obrigatórios não preenchidos' };
-    }
-    
-    const id = Date.now(); // ID único baseado em timestamp
-    const dataCriacao = new Date().toLocaleDateString('pt-BR');
-    
-    // Adicionar linha
-    sheet.appendRow([
-      id,
-      nome,
-      artista,
-      letras,
-      dataCriacao
-    ]);
-    
-    return { sucesso: true, mensagem: 'Música adicionada com sucesso!' };
-  } catch (erro) {
-    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
-  }
+/* ===== Rolagem automática ===== */
+function startScroll(){
+  const bottom=document.documentElement.scrollHeight-window.innerHeight;
+  if(window.scrollY>=bottom-1) window.scrollTo(0,0);
+  scrolling=true; lastTs=null; playBtn.textContent='⏸';
+  requestAnimationFrame(tick); lockScreen();
+}
+function stopScroll(){ scrolling=false; playBtn.textContent='▶'; releaseLock(); }
+function togglePlay(){ scrolling?stopScroll():startScroll(); }
+function tick(ts){
+  if(!scrolling) return;
+  if(lastTs===null) lastTs=ts;
+  const dt=Math.min((ts-lastTs)/1000,.1); lastTs=ts;
+  window.scrollBy(0,speed*dt); updateProgress();
+  if(window.scrollY>=document.documentElement.scrollHeight-window.innerHeight-1){ stopScroll(); return; }
+  requestAnimationFrame(tick);
+}
+function updateProgress(){
+  const h=document.documentElement.scrollHeight-window.innerHeight;
+  progressEl.style.width=(h>0?(window.scrollY/h)*100:0)+'%';
+}
+window.addEventListener('scroll',updateProgress);
+
+/* ===== Controles ===== */
+function changeSpeed(d){
+  speed=Math.min(200,Math.max(10,speed+d));
+  speedSlider.value=speed; speedVal.textContent=speed; store.set('tp_speed',speed);
+}
+function changeFont(d){
+  fontSize=Math.min(52,Math.max(14,fontSize+d));
+  document.documentElement.style.setProperty('--lyric-size',fontSize+'px');
+  store.set('tp_font',fontSize);
+}
+function changeTranspose(d){
+  transpose=Math.min(11,Math.max(-11,transpose+d));
+  store.set('tp_tr_'+current,transpose);
+  renderSong(); updateKey();
+}
+function applyChords(){
+  document.body.classList.toggle('hide-chords',!showChords);
+  chordsBtn.classList.toggle('active',showChords);
+}
+async function lockScreen(){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
+function releaseLock(){ try{ wakeLock&&wakeLock.release(); wakeLock=null; }catch(e){} }
+function toggleFullscreen(){
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
 }
 
-// 🗑️ DELETAR MÚSICA
-function deletarMusica(id) {
-  try {
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-    const dados = sheet.getDataRange().getValues();
-    
-    for (let i = 1; i < dados.length; i++) {
-      if (dados[i][0] == id) {
-        sheet.deleteRow(i + 1);
-        return { sucesso: true, mensagem: 'Música deletada com sucesso!' };
-      }
-    }
-    
-    return { sucesso: false, mensagem: 'Música não encontrada' };
-  } catch (erro) {
-    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
-  }
-}
+playBtn.onclick=togglePlay;
+document.getElementById('backTop').onclick=()=>{ stopScroll(); window.scrollTo({top:0,behavior:'smooth'}); };
+speedSlider.oninput=()=>{ speed=Number(speedSlider.value); speedVal.textContent=speed; store.set('tp_speed',speed); };
+document.getElementById('fontUp').onclick=()=>changeFont(2);
+document.getElementById('fontDown').onclick=()=>changeFont(-2);
+document.getElementById('trUp').onclick=()=>changeTranspose(1);
+document.getElementById('trDown').onclick=()=>changeTranspose(-1);
+chordsBtn.onclick=()=>{ showChords=!showChords; applyChords(); store.set('tp_chords',showChords?'1':'0'); };
+document.getElementById('fsBtn').onclick=toggleFullscreen;
+document.getElementById('menuBtn').onclick=()=>sidebar.classList.toggle('open');
+searchInput.oninput=()=>buildList(searchInput.value);
+sheet.onclick=()=>{ if(!window.getSelection().toString()) togglePlay(); };
 
-// ✏️ ATUALIZAR MÚSICA
-function atualizarMusica(id, nome, artista, letras) {
-  try {
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-    const dados = sheet.getDataRange().getValues();
-    
-    for (let i = 1; i < dados.length; i++) {
-      if (dados[i][0] == id) {
-        sheet.getRange(i + 1, 2, 1, 3).setValues([[nome, artista, letras]]);
-        return { sucesso: true, mensagem: 'Música atualizada com sucesso!' };
-      }
-    }
-    
-    return { sucesso: false, mensagem: 'Música não encontrada' };
-  } catch (erro) {
-    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  switch(e.code){
+    case 'Space': e.preventDefault(); togglePlay(); break;
+    case 'ArrowUp': e.preventDefault(); changeSpeed(5); break;
+    case 'ArrowDown': e.preventDefault(); changeSpeed(-5); break;
+    case 'ArrowRight': changeTranspose(1); break;
+    case 'ArrowLeft': changeTranspose(-1); break;
+    case 'KeyF': toggleFullscreen(); break;
+    case 'Digit0': case 'Home': window.scrollTo({top:0,behavior:'smooth'}); break;
   }
-}
+});
 
-// 📤 EXPORTAR PARA WEB (via HTTP)
-function doGet(e) {
-  try {
-    const acao = e.parameter.acao;
-    
-    if (acao === 'obter') {
-      const musicas = obterMusicas();
-      return ContentService.createTextOutput(JSON.stringify({
-        sucesso: true,
-        musicas: musicas
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    return ContentService.createTextOutput(JSON.stringify({
-      sucesso: false,
-      mensagem: 'Ação não reconhecida'
-    })).setMimeType(ContentService.MimeType.JSON);
-  } catch (erro) {
-    return ContentService.createTextOutput(JSON.stringify({
-      sucesso: false,
-      mensagem: 'Erro: ' + erro.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doPost(e) {
-  return doGet(e);
-}
-
-// 🏗️ INICIALIZAR PLANILHA (executar uma vez)
-function inicializarPlanilha() {
-  try {
-    const ss = SpreadsheetApp.create('Teleprompter - Músicas');
-    const sheet = ss.getActiveSheet();
-    
-    sheet.appendRow(['ID', 'Nome', 'Artista', 'Letras', 'Data Criação']);
-    
-    // Exemplo de música
-    sheet.appendRow([
-      Date.now(),
-      'Imagine',
-      'John Lennon',
-      'Imagine all the people\nLiving life in peace\nYou may say I\'m a dreamer\nBut I\'m not the only one',
-      new Date().toLocaleDateString('pt-BR')
-    ]);
-    
-    Logger.log('Planilha criada: ' + ss.getUrl());
-    alert('✅ Planilha criada! ID: ' + ss.getId());
-  } catch (erro) {
-    Logger.log('Erro: ' + erro);
-  }
-}
+/* ===== Iniciar ===== */
+document.documentElement.style.setProperty('--lyric-size',fontSize+'px');
+applyChords();
+speedSlider.value=speed; speedVal.textContent=speed;
+buildList();
+if(window.innerWidth>=900) sidebar.classList.add('open');
+if(SONGS.length) loadSong(0);
+else sheet.innerHTML='<p style="color:#9aa4af">Nenhuma música encontrada. Edite o arquivo <b>songs.js</b>.</p>';
+</script>
+</body>
+</html>
