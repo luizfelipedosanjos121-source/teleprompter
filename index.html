@@ -30,7 +30,7 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #keyLabel{min-width:30px;text-align:center;color:var(--chord);font-weight:700;font-size:14px}
 #progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
 
-/* Lista de músicas */
+/* Barra Lateral */
 #sidebar{position:fixed;top:52px;left:0;bottom:0;width:280px;z-index:15;background:var(--panel);
   border-right:1px solid #232b35;transform:translateX(-105%);transition:transform .25s ease;
   display:flex;flex-direction:column}
@@ -53,7 +53,7 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #songList .badge{font-size:12px;color:var(--chord);font-weight:700;flex-shrink:0}
 #hints{padding:10px 14px;font-size:11px;color:var(--muted);border-top:1px solid #232b35;line-height:1.55}
 
-/* Conteúdo */
+/* Folha da música */
 main{max-width:900px;margin:0 auto;padding:92px 24px 45vh}
 #sheet{font-size:var(--lyric-size);line-height:1.45;cursor:pointer}
 .lyric-line,.chord-line{white-space:pre-wrap;margin-bottom:.35em}
@@ -64,11 +64,11 @@ main{max-width:900px;margin:0 auto;padding:92px 24px 45vh}
 .chord{color:var(--chord);font-weight:700;font-size:.75em;line-height:1.15;min-height:1.15em;white-space:pre}
 .lyric{white-space:pre-wrap}
 body.hide-chords .chord{visibility:hidden}
-.empty-box{background:var(--panel);border:1px dashed #2e3947;border-radius:14px;padding:28px;text-align:center;color:var(--muted);font-size:16px}
-.empty-box button{margin:14px 4px 0;background:var(--accent);color:#04263b;font-weight:700;padding:10px 18px;border-radius:10px}
-.empty-box button.sec{background:#232b35;color:var(--text)}
+.empty-box{background:var(--panel);border:1px dashed #2e3947;border-radius:14px;padding:32px 20px;text-align:center;color:var(--muted);font-size:16px;margin-top:20px}
+.empty-box h3{color:var(--text);margin-bottom:8px}
+.empty-box button{margin-top:16px;background:var(--accent);color:#04263b;font-weight:700;padding:12px 20px;border-radius:10px;font-size:15px}
 
-/* Barra de reprodução */
+/* Barra inferior */
 #playback{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;
   gap:12px;z-index:20;background:rgba(20,26,34,.95);border:1px solid #232b35;border-radius:40px;
   padding:8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
@@ -141,9 +141,8 @@ body.hide-chords .chord{visibility:hidden}
   <div class="side-actions">
     <button id="sideAddBtn" class="primary">＋ Nova Música</button>
     <button id="syncBtn" class="icon-btn" title="Atualizar da planilha">🔄</button>
-    <button id="cfgBtn" class="icon-btn" title="Configurar Planilha">⚙️</button>
   </div>
-  <div id="syncStatus">Iniciando...</div>
+  <div id="syncStatus">Conectando...</div>
   <input id="search" placeholder="Buscar música ou artista...">
   <ul id="songList"></ul>
   <div id="hints">
@@ -187,8 +186,8 @@ body.hide-chords .chord{visibility:hidden}
           <input id="fKey" placeholder="Ex: G, Am, C#">
         </div>
         <div class="field">
-          <label>Velocidade da rolagem (10 a 200, opcional)</label>
-          <input id="fSpeed" type="number" min="10" max="200" placeholder="Deixe vazio para usar a atual">
+          <label>Velocidade (10 a 200, opcional)</label>
+          <input id="fSpeed" type="number" min="10" max="200" placeholder="Padrão: 60">
         </div>
       </div>
       <div class="field">
@@ -199,10 +198,9 @@ body.hide-chords .chord{visibility:hidden}
           <button type="button" data-tag="[Pré-Refrão]">+ [Pré-Refrão]</button>
           <button type="button" data-tag="[Refrão]">+ [Refrão]</button>
           <button type="button" data-tag="[Ponte]">+ [Ponte]</button>
-          <button type="button" data-tag="[Solo]">+ [Solo]</button>
         </div>
         <textarea id="fContent" placeholder="[Verso 1]&#10;[G]Escreva a [D]letra colocando as [Em]cifras entre col[C]chetes"></textarea>
-        <p class="tip">Coloque a cifra colada antes da sílaba, ex: <b>[C]Amado [G]irmão</b>. Linhas só com <b>[Refrão]</b> viram título de seção.</p>
+        <p class="tip">Coloque a cifra colada antes da sílaba: <b>[C]Amado [G]irmão</b>.</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -214,38 +212,12 @@ body.hide-chords .chord{visibility:hidden}
   </div>
 </div>
 
-<!-- Modal Configurar Planilha -->
-<div id="cfgModal" class="modal-backdrop">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-header">
-      <h3>⚙️ Conexão com Google Planilhas</h3>
-      <button id="closeCfgModal">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field">
-        <label>URL do App da Web (Google Apps Script)</label>
-        <input id="fApiUrl" placeholder="https://script.google.com/macros/s/.../exec">
-      </div>
-      <p class="tip">
-        1. A URL deve terminar com <b>/exec</b> (não use <b>/dev</b>).<br>
-        2. No Apps Script, deixe "Quem pode acessar" como <b>Qualquer pessoa</b>.
-      </p>
-    </div>
-    <div class="modal-footer">
-      <div class="spacer"></div>
-      <button id="cancelCfgBtn" class="btn">Fechar</button>
-      <button id="saveCfgBtn" class="btn btn-primary">Salvar e Sincronizar</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyK4SB6DiLbzppLJlbf2NzgfWBzTJTGK63pEDNic7xYP4q2Q9mYBOrZ3o-7nPequLyvPw/exec";
 
 const store = {
   get(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} },
-  set(k,v){ try{localStorage.setItem(k,v);}catch(e){} },
-  remove(k){ try{localStorage.removeItem(k);}catch(e){} }
+  set(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
 };
 
 const sidebar=document.getElementById('sidebar'), sheet=document.getElementById('sheet'),
@@ -253,7 +225,7 @@ const sidebar=document.getElementById('sidebar'), sheet=document.getElementById(
   speedVal=document.getElementById('speedVal'), keyLabel=document.getElementById('keyLabel'),
   progressEl=document.getElementById('progress'), chordsBtn=document.getElementById('toggleChords'),
   searchInput=document.getElementById('search'), syncStatus=document.getElementById('syncStatus'),
-  songModal=document.getElementById('songModal'), cfgModal=document.getElementById('cfgModal');
+  songModal=document.getElementById('songModal');
 
 let SONGS=[], current=0, transpose=0, scrolling=false, lastTs=null, wakeLock=null;
 let editingId=null;
@@ -261,13 +233,12 @@ let speed=Number(store.get('tp_speed',60));
 let fontSize=Number(store.get('tp_font',26));
 let showChords=store.get('tp_chords','1')==='1';
 
-function getApiUrl(){ return (store.get('tp_api_url','') || API_URL).trim(); }
 function setStatus(msg,type=''){
   syncStatus.textContent=msg;
   syncStatus.className=type;
 }
 
-/* ===== Cache local (funciona offline) ===== */
+/* Cache offline */
 function loadCache(){
   try{
     const raw=store.get('tp_songs_cache','');
@@ -278,61 +249,54 @@ function saveCache(songs){
   try{ store.set('tp_songs_cache', JSON.stringify(songs)); }catch(e){}
 }
 
-/* ===== Comunicação HTTP com Google Apps Script ===== */
+/* Comunicação com o Google Sheets */
 async function fetchSongs(silent=false){
-  const url=getApiUrl();
-  if(!url){
-    setStatus('⚙️ Configure a URL da planilha','err');
-    renderEmptyOrSong();
-    return;
-  }
-  if(!silent) setStatus('⏳ Carregando da planilha...');
+  if(!silent) setStatus('⏳ Conectando na planilha...');
   try{
-    const res=await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), { redirect:'follow' });
+    const res=await fetch(API_URL + '?t=' + Date.now(), { redirect:'follow' });
     const data=await res.json();
-    if(!data.ok) throw new Error(data.error||'Resposta inválida');
-
-    const prevCurId=SONGS[current]?.id;
-    const changed=JSON.stringify(SONGS)!==JSON.stringify(data.songs);
-    SONGS=data.songs||[];
+    
+    // Aceita tanto {songs:[...]} quanto {ok:true, songs:[...]}
+    const list = Array.isArray(data) ? data : (data.songs || []);
+    
+    SONGS = list;
     saveCache(SONGS);
-    setStatus(`☁️ Sincronizado (${SONGS.length} música${SONGS.length===1?'':'s'})`,'ok');
-
-    if(changed || !SONGS.length){
+    
+    if(SONGS.length > 0){
+      setStatus(`☁️ Conectado (${SONGS.length} música${SONGS.length===1?'':'s'})`, 'ok');
       buildList(searchInput.value);
-      const keepId=prevCurId || store.get('tp_current_id','');
-      const idx=SONGS.findIndex(s=>s.id===keepId);
-      if(scrolling && idx!==-1 && idx===current){
-        const y=window.scrollY;
-        renderSong(); updateKey();
-        window.scrollTo(0,y);
-      } else {
-        if(SONGS.length) loadSong(idx>=0?idx:0);
-        else renderEmptyOrSong();
-      }
+      const savedId = store.get('tp_current_id','');
+      const idx = SONGS.findIndex(s=>s.id===savedId);
+      loadSong(idx>=0 ? idx : 0);
+    } else {
+      setStatus('☁️ Conectado (0 músicas)', 'ok');
+      buildList();
+      renderEmpty();
     }
   }catch(err){
     console.error(err);
-    setStatus(SONGS.length?'📴 Offline (usando cache salvo)':'❌ Erro ao conectar na planilha','err');
-    if(!SONGS.length) renderEmptyOrSong(err.message);
+    if(SONGS.length > 0){
+      setStatus('📴 Modo offline (usando músicas salvas)', 'err');
+      buildList(searchInput.value);
+      loadSong(0);
+    } else {
+      setStatus('❌ Erro de conexão', 'err');
+      renderEmpty();
+    }
   }
 }
 
 async function apiPost(payload){
-  const url=getApiUrl();
-  if(!url) throw new Error('URL da planilha não configurada.');
-  const res=await fetch(url,{
+  const res=await fetch(API_URL,{
     method:'POST',
     redirect:'follow',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify(payload)
   });
-  const data=await res.json();
-  if(!data.ok) throw new Error(data.error||'Erro desconhecido');
-  return data;
+  return await res.json();
 }
 
-/* ===== Cifras: transposição ===== */
+/* Transposição de cifras */
 const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const FLATS={Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
 const CHORD_RE=/^([A-G][#b]?)([^/]*)(\/([A-G][#b]?))?$/;
@@ -351,7 +315,6 @@ function transposeChord(chord,semi){
   return out;
 }
 
-/* ===== Renderização ===== */
 function parseChordLine(line){
   const parts=[],re=/\[([^\]]+)\]/g;
   let last=0,m,chord=null;
@@ -364,6 +327,7 @@ function parseChordLine(line){
   if(chord!==null||rest) parts.push({chord:chord,text:rest});
   return parts;
 }
+
 function renderSong(){
   const s=SONGS[current]; if(!s) return;
   const lines=(s.content||'').replace(/^\n+|\n+$/g,'').split('\n');
@@ -390,32 +354,22 @@ function renderSong(){
   });
   sheet.innerHTML=''; sheet.appendChild(frag);
 }
-function renderEmptyOrSong(errMsg=''){
-  if(SONGS.length){ loadSong(0); return; }
+
+function renderEmpty(){
   document.getElementById('songTitle').textContent='Teleprompter';
   document.getElementById('songMeta').textContent='';
   keyLabel.textContent='';
-  const box=document.createElement('div'); box.className='empty-box';
-  if(!getApiUrl()){
-    box.innerHTML='<h3>Conecte sua Planilha Google</h3><p style="margin-top:8px">Clique abaixo para colar a URL do Apps Script.</p>';
-    const b=document.createElement('button'); b.textContent='⚙️ Configurar Planilha';
-    b.onclick=openCfgModal; box.appendChild(b);
-  } else if(errMsg){
-    box.innerHTML='<h3>Não foi possível conectar na planilha</h3><p style="margin-top:8px">Verifique se no Apps Script a opção <b>Quem pode acessar</b> está como <b>Qualquer pessoa</b>.</p>';
-    const b1=document.createElement('button'); b1.textContent='🔄 Tentar novamente';
-    b1.onclick=()=>fetchSongs(false);
-    const b2=document.createElement('button'); b2.className='sec'; b2.textContent='⚙️ Configurar URL';
-    b2.onclick=openCfgModal;
-    box.appendChild(b1); box.appendChild(b2);
-  } else {
-    box.innerHTML='<h3>Nenhuma música ainda</h3><p style="margin-top:8px">Adicione sua primeira música para salvar na planilha!</p>';
-    const b=document.createElement('button'); b.textContent='＋ Nova Música';
-    b.onclick=()=>openSongModal(null); box.appendChild(b);
-  }
-  sheet.innerHTML=''; sheet.appendChild(box);
+  sheet.innerHTML=`
+    <div class="empty-box">
+      <h3>Nenhuma música cadastrada ainda</h3>
+      <p>Clique no botão abaixo para adicionar sua primeira música à planilha!</p>
+      <button onclick="openSongModal(null)">＋ Adicionar Primeira Música</button>
+    </div>
+  `;
 }
+
 function loadSong(i){
-  if(!SONGS[i]){ renderEmptyOrSong(); return; }
+  if(!SONGS[i]){ renderEmpty(); return; }
   current=i;
   const s=SONGS[i];
   store.set('tp_current_id', s.id);
@@ -432,11 +386,12 @@ function loadSong(i){
     li.classList.toggle('active', li.dataset.id===s.id);
   });
 }
+
 function updateKey(){
   const s=SONGS[current];
-  keyLabel.textContent = s&&s.key ? transposeChord(s.key,transpose)
-    : (transpose>0?'+':'')+transpose;
+  keyLabel.textContent = s&&s.key ? transposeChord(s.key,transpose) : (transpose>0?'+':'')+transpose;
 }
+
 function buildList(filter=''){
   const ul=document.getElementById('songList'); ul.innerHTML='';
   const curId=SONGS[current]?.id;
@@ -461,7 +416,7 @@ function buildList(filter=''){
   });
 }
 
-/* ===== Rolagem automática ===== */
+/* Rolagem automática */
 function startScroll(){
   if(!SONGS.length) return;
   const bottom=document.documentElement.scrollHeight-window.innerHeight;
@@ -485,7 +440,6 @@ function updateProgress(){
 }
 window.addEventListener('scroll',updateProgress);
 
-/* ===== Controles ===== */
 function changeSpeed(d){
   speed=Math.min(200,Math.max(10,speed+d));
   speedSlider.value=speed; speedVal.textContent=speed; store.set('tp_speed',speed);
@@ -512,14 +466,13 @@ function toggleFullscreen(){
   else document.exitFullscreen();
 }
 
-/* ===== Modais: Adicionar / Editar / Configurar ===== */
+/* Modais */
 const fTitle=document.getElementById('fTitle'), fArtist=document.getElementById('fArtist'),
   fKey=document.getElementById('fKey'), fSpeed=document.getElementById('fSpeed'),
   fContent=document.getElementById('fContent'), saveSongBtn=document.getElementById('saveSongBtn'),
   deleteSongBtn=document.getElementById('deleteSongBtn');
 
 function openSongModal(song=null){
-  if(!getApiUrl()){ alert('Primeiro configure a URL do Apps Script!'); openCfgModal(); return; }
   stopScroll();
   editingId = song ? song.id : null;
   document.getElementById('modalTitle').textContent = song ? '✏️ Editar Música' : '＋ Nova Música';
@@ -547,9 +500,9 @@ document.getElementById('tagChips').onclick=e=>{
 saveSongBtn.onclick=async ()=>{
   const title=fTitle.value.trim();
   if(!title){ alert('Digite o título da música.'); fTitle.focus(); return; }
-  saveSongBtn.disabled=true; saveSongBtn.textContent='⏳ Salvando...';
+  saveSongBtn.disabled=true; saveSongBtn.textContent='⏳ Gravando na planilha...';
   try{
-    const data=await apiPost({
+    const res=await apiPost({
       action:'save',
       song:{
         id:editingId||'',
@@ -560,15 +513,19 @@ saveSongBtn.onclick=async ()=>{
         content:fContent.value
       }
     });
-    SONGS=data.songs||[];
+    
+    const list = Array.isArray(res) ? res : (res.songs || []);
+    if(list.length > 0) SONGS = list;
+    else await fetchSongs(true);
+
     saveCache(SONGS);
     buildList(searchInput.value);
-    const idx=SONGS.findIndex(s=>s.id===data.savedId);
-    loadSong(idx>=0?idx:0);
+    const idx = SONGS.findIndex(s=>s.title===title);
+    loadSong(idx>=0 ? idx : 0);
     setStatus(`☁️ Salvo! (${SONGS.length} músicas)`,'ok');
     closeSongModal();
   }catch(err){
-    alert('Erro ao salvar na planilha: ' + err.message);
+    alert('Erro ao salvar: ' + err.message);
   }finally{
     saveSongBtn.disabled=false; saveSongBtn.textContent='💾 Salvar na Planilha';
   }
@@ -576,43 +533,25 @@ saveSongBtn.onclick=async ()=>{
 
 deleteSongBtn.onclick=async ()=>{
   if(!editingId) return;
-  if(!confirm('Tem certeza que deseja excluir "' + fTitle.value + '" da planilha?')) return;
-  deleteSongBtn.disabled=true; saveSongBtn.disabled=true;
+  if(!confirm('Excluir esta música da planilha?')) return;
+  deleteSongBtn.disabled=true;
   try{
-    const data=await apiPost({ action:'delete', id:editingId });
-    SONGS=data.songs||[];
+    const res=await apiPost({ action:'delete', id:editingId });
+    const list = Array.isArray(res) ? res : (res.songs || []);
+    SONGS = list;
     saveCache(SONGS);
     buildList(searchInput.value);
-    if(SONGS.length) loadSong(0); else renderEmptyOrSong();
-    setStatus(`☁️ Excluída (${SONGS.length} músicas)`,'ok');
+    if(SONGS.length) loadSong(0); else renderEmpty();
+    setStatus(`☁️ Atualizado (${SONGS.length} músicas)`,'ok');
     closeSongModal();
   }catch(err){
     alert('Erro ao excluir: ' + err.message);
   }finally{
-    deleteSongBtn.disabled=false; saveSongBtn.disabled=false;
+    deleteSongBtn.disabled=false;
   }
 };
 
-function openCfgModal(){
-  stopScroll();
-  document.getElementById('fApiUrl').value = getApiUrl();
-  cfgModal.classList.add('open');
-}
-function closeCfgModal(){ cfgModal.classList.remove('open'); }
-
-document.getElementById('saveCfgBtn').onclick=()=>{
-  const val=document.getElementById('fApiUrl').value.trim();
-  if(val && val.includes('/dev')){
-    alert('Atenção: você colou a URL de teste (/dev). Use a URL da implantação (/exec)!');
-    return;
-  }
-  if(!val || val===API_URL) store.remove('tp_api_url');
-  else store.set('tp_api_url', val);
-  closeCfgModal();
-  fetchSongs();
-};
-
-/* ===== Eventos ===== */
+/* Eventos */
 playBtn.onclick=togglePlay;
 document.getElementById('backTop').onclick=()=>{ stopScroll(); window.scrollTo({top:0,behavior:'smooth'}); };
 speedSlider.oninput=()=>{ speed=Number(speedSlider.value); speedVal.textContent=speed; store.set('tp_speed',speed); };
@@ -630,18 +569,14 @@ document.getElementById('addSongBtn').onclick=()=>openSongModal(null);
 document.getElementById('sideAddBtn').onclick=()=>openSongModal(null);
 document.getElementById('editSongBtn').onclick=()=>{ if(SONGS[current]) openSongModal(SONGS[current]); };
 document.getElementById('syncBtn').onclick=()=>fetchSongs(false);
-document.getElementById('cfgBtn').onclick=openCfgModal;
 
 document.getElementById('closeSongModal').onclick=closeSongModal;
 document.getElementById('cancelSongBtn').onclick=closeSongModal;
-document.getElementById('closeCfgModal').onclick=closeCfgModal;
-document.getElementById('cancelCfgBtn').onclick=closeCfgModal;
 songModal.onclick=e=>{ if(e.target===songModal) closeSongModal(); };
-cfgModal.onclick=e=>{ if(e.target===cfgModal) closeCfgModal(); };
 
 document.addEventListener('keydown',e=>{
-  if(e.code==='Escape'){ closeSongModal(); closeCfgModal(); return; }
-  if(songModal.classList.contains('open')||cfgModal.classList.contains('open')) return;
+  if(e.code==='Escape'){ closeSongModal(); return; }
+  if(songModal.classList.contains('open')) return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
   switch(e.code){
     case 'Space': e.preventDefault(); togglePlay(); break;
@@ -654,22 +589,18 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-/* ===== Iniciar ===== */
+/* Iniciar */
 document.documentElement.style.setProperty('--lyric-size',fontSize+'px');
 applyChords();
 speedSlider.value=speed; speedVal.textContent=speed;
 if(window.innerWidth>=900) sidebar.classList.add('open');
 
 loadCache();
-buildList();
 if(SONGS.length){
-  const savedId=store.get('tp_current_id','');
-  const idx=SONGS.findIndex(s=>s.id===savedId);
-  loadSong(idx>=0?idx:0);
-} else if(getApiUrl()){
-  sheet.innerHTML='<div class="empty-box"><h3>⏳ Carregando músicas da planilha...</h3></div>';
+  buildList();
+  loadSong(0);
 } else {
-  renderEmptyOrSong();
+  renderEmpty();
 }
 fetchSongs(SONGS.length > 0);
 </script>
