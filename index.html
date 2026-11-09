@@ -14,7 +14,6 @@
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Arial,sans-serif;min-height:100vh}
 button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 
-/* Barra superior */
 #toolbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:8px;
   background:rgba(20,26,34,.95);backdrop-filter:blur(6px);padding:8px 12px;border-bottom:1px solid #232b35;flex-wrap:wrap}
 #menuBtn{font-size:22px;padding:4px 10px;border-radius:8px}
@@ -30,7 +29,6 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #keyLabel{min-width:30px;text-align:center;color:var(--chord);font-weight:700;font-size:14px}
 #progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
 
-/* Barra lateral */
 #sidebar{position:fixed;top:52px;left:0;bottom:0;width:280px;z-index:15;background:var(--panel);
   border-right:1px solid #232b35;transform:translateX(-105%);transition:transform .25s ease;
   display:flex;flex-direction:column}
@@ -53,7 +51,6 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #songList .badge{font-size:12px;color:var(--chord);font-weight:700;flex-shrink:0}
 #hints{padding:10px 14px;font-size:11px;color:var(--muted);border-top:1px solid #232b35;line-height:1.55}
 
-/* Folha da música */
 main{max-width:900px;margin:0 auto;padding:92px 24px 45vh}
 #sheet{font-size:var(--lyric-size);line-height:1.45;cursor:pointer}
 .lyric-line,.chord-line{white-space:pre-wrap;margin-bottom:.35em}
@@ -68,7 +65,6 @@ body.hide-chords .chord{visibility:hidden}
 .empty-box h3{color:var(--text);margin-bottom:8px}
 .empty-box button{margin-top:16px;background:var(--accent);color:#04263b;font-weight:700;padding:12px 20px;border-radius:10px;font-size:15px}
 
-/* Barra inferior */
 #playback{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;
   gap:12px;z-index:20;background:rgba(20,26,34,.95);border:1px solid #232b35;border-radius:40px;
   padding:8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
@@ -79,7 +75,6 @@ body.hide-chords .chord{visibility:hidden}
 #speed{width:130px;accent-color:var(--accent)}
 #speedVal{font-size:12px;color:var(--muted);width:34px;text-align:center}
 
-/* Modais */
 .modal-backdrop{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
   display:none;align-items:center;justify-content:center;padding:14px}
 .modal-backdrop.open{display:flex}
@@ -162,7 +157,6 @@ body.hide-chords .chord{visibility:hidden}
   <span id="speedVal">60</span>
 </div>
 
-<!-- Modal Adicionar / Editar Música -->
 <div id="songModal" class="modal-backdrop">
   <div class="modal">
     <div class="modal-header">
@@ -171,36 +165,23 @@ body.hide-chords .chord{visibility:hidden}
     </div>
     <div class="modal-body">
       <div class="row2">
-        <div class="field">
-          <label>Título *</label>
-          <input id="fTitle" placeholder="Ex: Amazing Grace">
-        </div>
-        <div class="field">
-          <label>Artista / Banda</label>
-          <input id="fArtist" placeholder="Ex: Tradicional">
-        </div>
+        <div class="field"><label>Título *</label><input id="fTitle" placeholder="Ex: Amazing Grace"></div>
+        <div class="field"><label>Artista / Banda</label><input id="fArtist" placeholder="Ex: Tradicional"></div>
       </div>
       <div class="row2">
-        <div class="field">
-          <label>Tom original (notação americana)</label>
-          <input id="fKey" placeholder="Ex: G, Am, C#">
-        </div>
-        <div class="field">
-          <label>Velocidade (10 a 200, opcional)</label>
-          <input id="fSpeed" type="number" min="10" max="200" placeholder="Padrão: 60">
-        </div>
+        <div class="field"><label>Tom original</label><input id="fKey" placeholder="Ex: G, Am, C#"></div>
+        <div class="field"><label>Velocidade (10-200)</label><input id="fSpeed" type="number" min="10" max="200" placeholder="60"></div>
       </div>
       <div class="field">
         <label>Letra e Cifras</label>
         <div class="chips" id="tagChips">
           <button type="button" data-tag="[Intro]">+ [Intro]</button>
           <button type="button" data-tag="[Verso 1]">+ [Verso 1]</button>
-          <button type="button" data-tag="[Pré-Refrão]">+ [Pré-Refrão]</button>
           <button type="button" data-tag="[Refrão]">+ [Refrão]</button>
           <button type="button" data-tag="[Ponte]">+ [Ponte]</button>
         </div>
-        <textarea id="fContent" placeholder="[Verso 1]&#10;[G]Escreva a [D]letra colocando as [Em]cifras entre col[C]chetes"></textarea>
-        <p class="tip">Coloque a cifra colada antes da sílaba: <b>[C]Amado [G]irmão</b>.</p>
+        <textarea id="fContent" placeholder="[Verso 1]&#10;[G]Escreva a [D]letra com [Em]cifras entre col[C]chetes"></textarea>
+        <p class="tip">Coloque a cifra antes da sílaba: <b>[C]Amado [G]irmão</b>.</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -213,7 +194,7 @@ body.hide-chords .chord{visibility:hidden}
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxLRuWdvK4SNlBpN8Ym2KKFKXleYIyEhvDO1lxjltmFjTclBq_sXgsxWg-NczEHPww-CA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwOhtznZH4D7jm4n7ughfVJNsdRMaS0jOHRcHzDg0YdRAlcU41NzyIsY_0qSCCVxl-J/exec";
 
 const store = {
   get(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} },
@@ -238,7 +219,6 @@ function setStatus(msg,type=''){
   syncStatus.className=type;
 }
 
-/* Cache offline */
 function loadCache(){
   try{
     const raw=store.get('tp_songs_cache','');
@@ -249,17 +229,14 @@ function saveCache(songs){
   try{ store.set('tp_songs_cache', JSON.stringify(songs)); }catch(e){}
 }
 
-/* Comunicação com o Google Sheets */
 async function fetchSongs(silent=false){
   if(!silent) setStatus('⏳ Conectando na planilha...');
   try{
     const res=await fetch(API_URL + '?t=' + Date.now(), { redirect:'follow' });
     const data=await res.json();
-    
     const list = Array.isArray(data) ? data : (data.songs || []);
     SONGS = list;
     saveCache(SONGS);
-    
     if(SONGS.length > 0){
       setStatus(`☁️ Conectado (${SONGS.length} música${SONGS.length===1?'':'s'})`, 'ok');
       buildList(searchInput.value);
@@ -272,7 +249,7 @@ async function fetchSongs(silent=false){
       renderEmpty();
     }
   }catch(err){
-    console.error(err);
+    console.error('Erro ao carregar:', err);
     if(SONGS.length > 0){
       setStatus('📴 Modo offline (usando músicas salvas)', 'err');
       buildList(searchInput.value);
@@ -285,6 +262,7 @@ async function fetchSongs(silent=false){
 }
 
 async function apiPost(payload){
+  console.log('🔌 Enviando para Apps Script:', payload);
   const res=await fetch(API_URL,{
     method:'POST',
     redirect:'follow',
@@ -292,13 +270,14 @@ async function apiPost(payload){
     body:JSON.stringify(payload)
   });
   const text = await res.text();
+  console.log('📥 Resposta bruta do servidor:', text);
   let data;
   try{ data = JSON.parse(text); }catch(e){ throw new Error('Resposta inválida do servidor: ' + text); }
   if(!data.ok) throw new Error(data.error||'Erro desconhecido');
+  console.log('✅ Dados salvos com sucesso:', data);
   return data;
 }
 
-/* Transposição de cifras */
 const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const FLATS={Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
 const CHORD_RE=/^([A-G][#b]?)([^/]*)(\/([A-G][#b]?))?$/;
@@ -402,23 +381,17 @@ function buildList(filter=''){
     const li=document.createElement('li');
     li.dataset.id=s.id;
     if(s.id===curId) li.classList.add('active');
-
     const meta=document.createElement('div'); meta.className='meta';
     const st=document.createElement('strong'); st.textContent=s.title;
     const ar=document.createElement('span'); ar.className='artist'; ar.textContent=s.artist||'';
     meta.appendChild(st); meta.appendChild(ar);
-
     li.appendChild(meta);
-    if(s.key){
-      const bd=document.createElement('span'); bd.className='badge'; bd.textContent=s.key;
-      li.appendChild(bd);
-    }
+    if(s.key){ const bd=document.createElement('span'); bd.className='badge'; bd.textContent=s.key; li.appendChild(bd); }
     li.onclick=()=>{ loadSong(i); if(window.innerWidth<900) sidebar.classList.remove('open'); };
     ul.appendChild(li);
   });
 }
 
-/* Rolagem automática */
 function startScroll(){
   if(!SONGS.length) return;
   const bottom=document.documentElement.scrollHeight-window.innerHeight;
@@ -442,33 +415,14 @@ function updateProgress(){
 }
 window.addEventListener('scroll',updateProgress);
 
-function changeSpeed(d){
-  speed=Math.min(200,Math.max(10,speed+d));
-  speedSlider.value=speed; speedVal.textContent=speed; store.set('tp_speed',speed);
-}
-function changeFont(d){
-  fontSize=Math.min(52,Math.max(14,fontSize+d));
-  document.documentElement.style.setProperty('--lyric-size',fontSize+'px');
-  store.set('tp_font',fontSize);
-}
-function changeTranspose(d){
-  const s=SONGS[current]; if(!s) return;
-  transpose=Math.min(11,Math.max(-11,transpose+d));
-  store.set('tp_tr_'+s.id,transpose);
-  renderSong(); updateKey();
-}
-function applyChords(){
-  document.body.classList.toggle('hide-chords',!showChords);
-  chordsBtn.classList.toggle('active',showChords);
-}
+function changeSpeed(d){ speed=Math.min(200,Math.max(10,speed+d)); speedSlider.value=speed; speedVal.textContent=speed; store.set('tp_speed',speed); }
+function changeFont(d){ fontSize=Math.min(52,Math.max(14,fontSize+d)); document.documentElement.style.setProperty('--lyric-size',fontSize+'px'); store.set('tp_font',fontSize); }
+function changeTranspose(d){ const s=SONGS[current]; if(!s) return; transpose=Math.min(11,Math.max(-11,transpose+d)); store.set('tp_tr_'+s.id,transpose); renderSong(); updateKey(); }
+function applyChords(){ document.body.classList.toggle('hide-chords',!showChords); chordsBtn.classList.toggle('active',showChords); }
 async function lockScreen(){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} }
 function releaseLock(){ try{ wakeLock&&wakeLock.release(); wakeLock=null; }catch(e){} }
-function toggleFullscreen(){
-  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
-  else document.exitFullscreen();
-}
+function toggleFullscreen(){ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); }
 
-/* Modais */
 const fTitle=document.getElementById('fTitle'), fArtist=document.getElementById('fArtist'),
   fKey=document.getElementById('fKey'), fSpeed=document.getElementById('fSpeed'),
   fContent=document.getElementById('fContent'), saveSongBtn=document.getElementById('saveSongBtn'),
@@ -502,7 +456,7 @@ document.getElementById('tagChips').onclick=e=>{
 saveSongBtn.onclick=async ()=>{
   const title=fTitle.value.trim();
   if(!title){ alert('Digite o título da música.'); fTitle.focus(); return; }
-  saveSongBtn.disabled=true; saveSongBtn.textContent='⏳ Gravando na planilha...';
+  saveSongBtn.disabled=true; saveSongBtn.textContent='⏳ Gravando...';
   try{
     const res=await apiPost({
       action:'save',
@@ -515,11 +469,9 @@ saveSongBtn.onclick=async ()=>{
         content:fContent.value
       }
     });
-    
     const list = Array.isArray(res) ? res : (res.songs || []);
     if(list.length > 0) SONGS = list;
     else await fetchSongs(true);
-
     saveCache(SONGS);
     buildList(searchInput.value);
     const idx = SONGS.findIndex(s=>s.title===title);
@@ -527,6 +479,7 @@ saveSongBtn.onclick=async ()=>{
     setStatus(`☁️ Salvo! (${SONGS.length} músicas)`,'ok');
     closeSongModal();
   }catch(err){
+    console.error('Erro ao salvar:', err);
     alert('Erro ao salvar na planilha:\n' + err.message);
   }finally{
     saveSongBtn.disabled=false; saveSongBtn.textContent='💾 Salvar na Planilha';
@@ -548,12 +501,9 @@ deleteSongBtn.onclick=async ()=>{
     closeSongModal();
   }catch(err){
     alert('Erro ao excluir:\n' + err.message);
-  }finally{
-    deleteSongBtn.disabled=false;
-  }
+  }finally{ deleteSongBtn.disabled=false; }
 };
 
-/* Eventos */
 playBtn.onclick=togglePlay;
 document.getElementById('backTop').onclick=()=>{ stopScroll(); window.scrollTo({top:0,behavior:'smooth'}); };
 speedSlider.oninput=()=>{ speed=Number(speedSlider.value); speedVal.textContent=speed; store.set('tp_speed',speed); };
@@ -591,19 +541,13 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-/* Iniciar */
 document.documentElement.style.setProperty('--lyric-size',fontSize+'px');
 applyChords();
 speedSlider.value=speed; speedVal.textContent=speed;
 if(window.innerWidth>=900) sidebar.classList.add('open');
 
 loadCache();
-if(SONGS.length){
-  buildList();
-  loadSong(0);
-} else {
-  renderEmpty();
-}
+if(SONGS.length){ buildList(); loadSong(0); } else { renderEmpty(); }
 fetchSongs(SONGS.length > 0);
 </script>
 </body>
