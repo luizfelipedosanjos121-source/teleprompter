@@ -30,7 +30,7 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #keyLabel{min-width:30px;text-align:center;color:var(--chord);font-weight:700;font-size:14px}
 #progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
 
-#sidebar{position:fixed;top:52px;left:0;bottom:0;width:280px;z-index:15;background:var(--panel);
+#sidebar{position:fixed;top:52px;left:0;bottom:0;width:300px;z-index:15;background:var(--panel);
   border-right:1px solid #232b35;transform:translateX(-105%);transition:transform .25s ease;
   display:flex;flex-direction:column}
 #sidebar.open{transform:translateX(0)}
@@ -46,12 +46,26 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #songList li{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;display:flex;align-items:center;justify-content:space-between;gap:8px}
 #songList li:hover{background:#1b232e}
 #songList li.active{border-left-color:var(--accent);background:#1b232e}
-#songList .meta{min-width:0}
+#songList .meta{flex:1;min-width:0}
 #songList strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #songList .artist{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #songList .badge{font-size:12px;color:var(--chord);font-weight:700;flex-shrink:0}
 #hints{padding:10px 14px;font-size:11px;color:var(--muted);border-top:1px solid #232b35;line-height:1.55}
 
+#setBar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:0 14px 8px}
+#setBar button{background:#232b35;border-radius:8px;padding:5px 9px;font-size:12px}
+#setBar button:hover{background:#2e3947}
+#setBar .go{background:var(--ok);color:#04261a;font-weight:700}
+#selInfo{font-size:11px;color:var(--muted);width:100%}
+#songList li .chk{accent-color:var(--accent);width:18px;height:18px;flex-shrink:0;cursor:pointer}
+#songList li .mv{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+#songList li .mv button{background:#232b35;border-radius:5px;font-size:10px;line-height:1;padding:4px 8px}
+#songList li .mv button:hover:not(:disabled){background:#2e3947}
+#songList li .mv button:disabled{opacity:.25;cursor:default}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--accent);color:#04263b;
+  font-weight:700;padding:10px 18px;border-radius:24px;z-index:40;display:none;box-shadow:0 6px 24px rgba(0,0,0,.5);
+  max-width:92vw;text-align:center;cursor:pointer}
+#toast.show{display:block}
 main{max-width:900px;margin:0 auto;padding:92px 24px 45vh}
 #sheet{font-size:var(--lyric-size);line-height:1.45;cursor:pointer}
 .lyric-line,.chord-line{white-space:pre-wrap;margin-bottom:.35em}
@@ -150,10 +164,17 @@ body.hide-chords .chord{visibility:hidden}
   </div>
   <div id="syncStatus">Conectando...</div>
   <input id="search" placeholder="Buscar música ou artista...">
+  <div id="setBar">
+    <button id="seqBtn" class="go" title="Toca as músicas marcadas, uma após a outra">▶ Iniciar sequência</button>
+    <button id="selAllBtn">Todas</button>
+    <button id="selNoneBtn">Limpar</button>
+    <div id="selInfo"></div>
+  </div>
   <ul id="songList"></ul>
   <div id="hints">
     <b>Espaço</b>: play/pausa • <b>↑ ↓</b>: velocidade<br>
-    <b>← →</b>: tom • <b>F</b>: tela cheia • <b>0</b>: início
+    <b>← →</b>: tom • <b>F</b>: tela cheia • <b>0</b>: início<br>
+    <b>N</b>: próxima música • <b>▲▼</b>: mudar posição
   </div>
 </aside>
 
@@ -166,9 +187,12 @@ body.hide-chords .chord{visibility:hidden}
   <div id="sheet"></div>
 </main>
 
+<div id="toast"></div>
+
 <div id="playback">
   <button id="backTop" title="Voltar ao início">⏮</button>
   <button id="playBtn" title="Tocar/Pausar">▶</button>
+  <button id="nextBtn" title="Próxima música (N)" style="font-size:18px;color:var(--muted);padding:8px">⏭</button>
   <input type="range" id="speed" min="10" max="200" value="60">
   <span id="speedVal">60</span>
 </div>
@@ -241,6 +265,84 @@ let speed=Number(store.get('tp_speed',60));
 let fontSize=Number(store.get('tp_font',26));
 let showChords=store.get('tp_chords','1')==='1';
 
+/* ===== Ordem das músicas e sequência (salvos neste aparelho) ===== */
+function getJSON(k){ try{ const v=JSON.parse(store.get(k,'[]')); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+function getSel(){ return getJSON('tp_sel'); }
+function setSel(a){ store.set('tp_sel',JSON.stringify(a)); }
+function saveOrder(){ store.set('tp_order',JSON.stringify(SONGS.map(s=>s.id))); }
+function applyOrder(){
+  if(!SONGS.length) return;
+  const ids=new Set(SONGS.map(s=>s.id));
+  const sel=getSel(), keep=sel.filter(id=>ids.has(id));
+  if(keep.length!==sel.length) setSel(keep);
+  const order=getJSON('tp_order');
+  if(!order.length) return;
+  const pos=new Map(order.map((id,i)=>[id,i]));
+  const orig=new Map(SONGS.map((s,i)=>[s.id,i]));
+  SONGS.sort((a,b)=>{
+    const pa=pos.has(a.id)?pos.get(a.id):1e6+orig.get(a.id);
+    const pb=pos.has(b.id)?pos.get(b.id):1e6+orig.get(b.id);
+    return pa-pb;
+  });
+}
+function moveSong(i,d){
+  const j=i+d; if(j<0||j>=SONGS.length) return;
+  const curId=SONGS[current]?.id;
+  [SONGS[i],SONGS[j]]=[SONGS[j],SONGS[i]];
+  current=Math.max(0,SONGS.findIndex(s=>s.id===curId));
+  saveOrder(); saveCache(SONGS); buildList(searchInput.value);
+}
+function toggleSel(id){
+  const sel=getSel(), k=sel.indexOf(id);
+  if(k>=0) sel.splice(k,1); else sel.push(id);
+  setSel(sel); updateSelInfo();
+}
+function updateSelInfo(){
+  const n=getSel().length;
+  document.getElementById('selInfo').textContent = n
+    ? `${n} marcada${n===1?'':'s'} • tocam na ordem da lista`
+    : 'Marque ✔ as músicas para tocar em sequência';
+}
+
+const toastEl=document.getElementById('toast');
+let autoTimer=null;
+function toast(msg,ms=0){ toastEl.textContent=msg; toastEl.classList.add('show'); if(ms) setTimeout(()=>toastEl.classList.remove('show'),ms); }
+function cancelAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } toastEl.classList.remove('show'); }
+function nextSelectedIndex(){
+  const sel=getSel();
+  for(let i=current+1;i<SONGS.length;i++) if(sel.includes(SONGS[i].id)) return i;
+  return -1;
+}
+function onSongEnd(){
+  const s=SONGS[current];
+  if(!s || !getSel().includes(s.id)) return;
+  const n=nextSelectedIndex();
+  if(n<0){ toast('✅ Fim da sequência',3500); return; }
+  let left=3;
+  const msg=()=>`⏭ Próxima: ${SONGS[n].title} em ${left}s (toque para cancelar)`;
+  toast(msg());
+  autoTimer=setInterval(()=>{
+    left--;
+    if(left<=0){ cancelAuto(); loadSong(n); startScroll(); }
+    else toast(msg());
+  },1000);
+}
+function playNext(){
+  cancelAuto();
+  const hasSel=getSel().length>0;
+  const n=hasSel ? nextSelectedIndex() : (current+1<SONGS.length ? current+1 : -1);
+  if(n<0){ toast('Não há próxima música',2000); return; }
+  const wasPlaying=scrolling;
+  loadSong(n);
+  if(wasPlaying) startScroll();
+}
+function startSequence(){
+  const sel=getSel(), i=SONGS.findIndex(s=>sel.includes(s.id));
+  if(i<0){ toast('Marque ✔ pelo menos uma música',2500); return; }
+  loadSong(i); startScroll();
+  if(window.innerWidth<900) sidebar.classList.remove('open');
+}
+
 function setStatus(msg,type=''){
   syncStatus.textContent=msg;
   syncStatus.className=type;
@@ -264,6 +366,7 @@ async function fetchSongs(silent=false){
     if(data && data.ok===false) throw new Error(data.error||'Erro no servidor');
     const list = Array.isArray(data) ? data : (data.songs || []);
     SONGS = list;
+    applyOrder();
     saveCache(SONGS);
     if(SONGS.length > 0){
       setStatus(`☁️ Conectado (${SONGS.length} música${SONGS.length===1?'':'s'})`, 'ok');
@@ -399,6 +502,7 @@ function renderEmpty(){
 
 function loadSong(i){
   if(!SONGS[i]){ renderEmpty(); return; }
+  cancelAuto();
   current=i;
   const s=SONGS[i];
   store.set('tp_current_id', s.id);
@@ -424,21 +528,34 @@ function updateKey(){
 
 function buildList(filter=''){
   const ul=document.getElementById('songList'); ul.innerHTML='';
-  const curId=SONGS[current]?.id;
+  const curId=SONGS[current]?.id, sel=getSel(), filtering=!!filter;
   SONGS.forEach((s,i)=>{
     if(filter && !(s.title+' '+(s.artist||'')).toLowerCase().includes(filter.toLowerCase())) return;
     const li=document.createElement('li');
     li.dataset.id=s.id;
     if(s.id===curId) li.classList.add('active');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.className='chk';
+    cb.checked=sel.includes(s.id); cb.title='Incluir na sequência';
+    cb.onclick=e=>{ e.stopPropagation(); toggleSel(s.id); };
+    li.appendChild(cb);
     const meta=document.createElement('div'); meta.className='meta';
     const st=document.createElement('strong'); st.textContent=s.title + (s.fileUrl ? ' 📎' : '');
     const ar=document.createElement('span'); ar.className='artist'; ar.textContent=s.artist||'';
     meta.appendChild(st); meta.appendChild(ar);
     li.appendChild(meta);
     if(s.key){ const bd=document.createElement('span'); bd.className='badge'; bd.textContent=s.key; li.appendChild(bd); }
+    if(!filtering){
+      const mv=document.createElement('div'); mv.className='mv';
+      const up=document.createElement('button'); up.textContent='▲'; up.title='Subir'; up.disabled=(i===0);
+      const dn=document.createElement('button'); dn.textContent='▼'; dn.title='Descer'; dn.disabled=(i===SONGS.length-1);
+      up.onclick=e=>{ e.stopPropagation(); moveSong(i,-1); };
+      dn.onclick=e=>{ e.stopPropagation(); moveSong(i,1); };
+      mv.appendChild(up); mv.appendChild(dn); li.appendChild(mv);
+    }
     li.onclick=()=>{ loadSong(i); if(window.innerWidth<900) sidebar.classList.remove('open'); };
     ul.appendChild(li);
   });
+  updateSelInfo();
 }
 
 function startScroll(){
@@ -449,13 +566,13 @@ function startScroll(){
   requestAnimationFrame(tick); lockScreen();
 }
 function stopScroll(){ scrolling=false; playBtn.textContent='▶'; releaseLock(); }
-function togglePlay(){ scrolling?stopScroll():startScroll(); }
+function togglePlay(){ cancelAuto(); scrolling?stopScroll():startScroll(); }
 function tick(ts){
   if(!scrolling) return;
   if(lastTs===null) lastTs=ts;
   const dt=Math.min((ts-lastTs)/1000,.1); lastTs=ts;
   window.scrollBy(0,speed*dt); updateProgress();
-  if(window.scrollY>=document.documentElement.scrollHeight-window.innerHeight-1){ stopScroll(); return; }
+  if(window.scrollY>=document.documentElement.scrollHeight-window.innerHeight-1){ stopScroll(); onSongEnd(); return; }
   requestAnimationFrame(tick);
 }
 function updateProgress(){
@@ -532,7 +649,7 @@ saveSongBtn.onclick=async ()=>{
     const list = Array.isArray(res) ? res : (res.songs || []);
     if(list.length > 0) SONGS = list;
     else await fetchSongs(true);
-    saveCache(SONGS);
+    applyOrder(); saveCache(SONGS);
     buildList(searchInput.value);
     const idx = SONGS.findIndex(s=>s.id===res.savedId);
     loadSong(idx>=0 ? idx : 0);
@@ -554,6 +671,7 @@ deleteSongBtn.onclick=async ()=>{
     const res=await apiPost({ action:'delete', id:editingId });
     const list = Array.isArray(res) ? res : (res.songs || []);
     SONGS = list;
+    applyOrder();
     saveCache(SONGS);
     buildList(searchInput.value);
     if(SONGS.length) loadSong(0); else renderEmpty();
@@ -566,6 +684,11 @@ deleteSongBtn.onclick=async ()=>{
 
 downloadBtn.onclick=()=>{ const s=SONGS[current]; if(s && s.fileUrl) window.open(s.fileUrl,'_blank'); };
 playBtn.onclick=togglePlay;
+document.getElementById('nextBtn').onclick=playNext;
+document.getElementById('seqBtn').onclick=startSequence;
+document.getElementById('selAllBtn').onclick=()=>{ setSel(SONGS.map(s=>s.id)); buildList(searchInput.value); };
+document.getElementById('selNoneBtn').onclick=()=>{ setSel([]); buildList(searchInput.value); };
+toastEl.onclick=cancelAuto;
 document.getElementById('backTop').onclick=()=>{ stopScroll(); window.scrollTo({top:0,behavior:'smooth'}); };
 speedSlider.oninput=()=>{ speed=Number(speedSlider.value); speedVal.textContent=speed; store.set('tp_speed',speed); };
 document.getElementById('fontUp').onclick=()=>changeFont(2);
@@ -598,6 +721,7 @@ document.addEventListener('keydown',e=>{
     case 'ArrowRight': changeTranspose(1); break;
     case 'ArrowLeft': changeTranspose(-1); break;
     case 'KeyF': toggleFullscreen(); break;
+    case 'KeyN': playNext(); break;
     case 'Digit0': case 'Home': window.scrollTo({top:0,behavior:'smooth'}); break;
   }
 });
@@ -607,7 +731,7 @@ applyChords();
 speedSlider.value=speed; speedVal.textContent=speed;
 if(window.innerWidth>=900) sidebar.classList.add('open');
 
-loadCache();
+loadCache(); applyOrder();
 if(SONGS.length){ buildList(); loadSong(0); } else { renderEmpty(); }
 fetchSongs(SONGS.length > 0);
 </script>
