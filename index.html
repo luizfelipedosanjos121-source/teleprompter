@@ -26,6 +26,7 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 .controls button:hover{background:#2e3947}
 .controls button.active{background:var(--accent);color:#04263b;font-weight:700}
 .controls button.add-btn{background:var(--accent);color:#04263b;font-weight:700}
+.controls button.dl-btn{background:var(--ok);color:#04261a;font-weight:700}
 #keyLabel{min-width:30px;text-align:center;color:var(--chord);font-weight:700;font-size:14px}
 #progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
 
@@ -65,6 +66,12 @@ body.hide-chords .chord{visibility:hidden}
 .empty-box h3{color:var(--text);margin-bottom:8px}
 .empty-box button{margin-top:16px;background:var(--accent);color:#04263b;font-weight:700;padding:12px 20px;border-radius:10px;font-size:15px}
 
+#fileBar{display:none;align-items:center;gap:10px;background:var(--panel);border:1px solid #2b3543;
+  border-radius:12px;padding:10px 14px;margin-bottom:18px;font-size:14px}
+#fileBar.show{display:flex}
+#fileBar .fname{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+#fileBar a{background:var(--ok);color:#04261a;font-weight:700;padding:7px 14px;border-radius:9px;text-decoration:none;font-size:13px;flex-shrink:0}
+
 #playback{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;
   gap:12px;z-index:20;background:rgba(20,26,34,.95);border:1px solid #232b35;border-radius:40px;
   padding:8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
@@ -89,10 +96,13 @@ body.hide-chords .chord{visibility:hidden}
   background:#0b0e13;color:var(--text);font:inherit;outline:none}
 .field input:focus,.field textarea:focus{border-color:var(--accent)}
 .field textarea{min-height:230px;resize:vertical;font-family:Consolas,Monaco,'Courier New',monospace;font-size:14px;line-height:1.5}
+.field input[type=file]{padding:8px 10px;font-size:13px}
+.field .check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--danger);margin:8px 0 0;cursor:pointer}
+.field .check input{width:auto}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .chips button{background:#232b35;color:var(--accent);font-size:12px;padding:4px 9px;border-radius:14px}
 .chips button:hover{background:#2e3947}
-.tip{font-size:12px;color:var(--muted);line-height:1.45}
+.tip{font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
 .modal-footer{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid #232b35}
 .modal-footer .spacer{flex:1}
 .btn{padding:9px 15px;border-radius:10px;font-size:14px;font-weight:600;background:#232b35}
@@ -126,6 +136,7 @@ body.hide-chords .chord{visibility:hidden}
     <button id="fontDown" title="Diminuir letra">A−</button>
     <button id="fontUp" title="Aumentar letra">A+</button>
     <button id="toggleChords" title="Mostrar/ocultar cifras">Cifras</button>
+    <button id="downloadBtn" class="dl-btn" title="Baixar arquivo" style="display:none">⬇️</button>
     <button id="editSongBtn" title="Editar música atual">✏️</button>
     <button id="addSongBtn" class="add-btn" title="Nova música">＋</button>
     <button id="fsBtn" title="Tela cheia">⛶</button>
@@ -147,6 +158,11 @@ body.hide-chords .chord{visibility:hidden}
 </aside>
 
 <main>
+  <div id="fileBar">
+    <span>📎</span>
+    <span class="fname" id="fileBarName"></span>
+    <a id="fileBarLink" href="#" target="_blank" rel="noopener">⬇️ Baixar</a>
+  </div>
   <div id="sheet"></div>
 </main>
 
@@ -183,6 +199,14 @@ body.hide-chords .chord{visibility:hidden}
         <textarea id="fContent" placeholder="[Verso 1]&#10;[G]Escreva a [D]letra com [Em]cifras entre col[C]chetes"></textarea>
         <p class="tip">Coloque a cifra antes da sílaba: <b>[C]Amado [G]irmão</b>.</p>
       </div>
+      <div class="field">
+        <label>📎 Arquivo da música (.vs, mp3, pdf… até 10 MB)</label>
+        <input id="fFile" type="file">
+        <p class="tip" id="fFileInfo"></p>
+        <label class="check" id="removeFileWrap" style="display:none">
+          <input type="checkbox" id="fRemoveFile"> Remover arquivo atual
+        </label>
+      </div>
     </div>
     <div class="modal-footer">
       <button id="deleteSongBtn" class="btn btn-danger" style="display:none">🗑️ Excluir</button>
@@ -195,6 +219,7 @@ body.hide-chords .chord{visibility:hidden}
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwOhtznZH4D7jm4n7ughfVJNsdRMaS0jOHRcHzDg0YdRAlcU41NzyIsY_0qSCCVxl-J/exec";
+const MAX_FILE_MB = 10;
 
 const store = {
   get(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} },
@@ -206,7 +231,9 @@ const sidebar=document.getElementById('sidebar'), sheet=document.getElementById(
   speedVal=document.getElementById('speedVal'), keyLabel=document.getElementById('keyLabel'),
   progressEl=document.getElementById('progress'), chordsBtn=document.getElementById('toggleChords'),
   searchInput=document.getElementById('search'), syncStatus=document.getElementById('syncStatus'),
-  songModal=document.getElementById('songModal');
+  songModal=document.getElementById('songModal'),
+  downloadBtn=document.getElementById('downloadBtn'), fileBar=document.getElementById('fileBar'),
+  fileBarName=document.getElementById('fileBarName'), fileBarLink=document.getElementById('fileBarLink');
 
 let SONGS=[], current=0, transpose=0, scrolling=false, lastTs=null, wakeLock=null;
 let editingId=null;
@@ -234,6 +261,7 @@ async function fetchSongs(silent=false){
   try{
     const res=await fetch(API_URL + '?t=' + Date.now(), { redirect:'follow' });
     const data=await res.json();
+    if(data && data.ok===false) throw new Error(data.error||'Erro no servidor');
     const list = Array.isArray(data) ? data : (data.songs || []);
     SONGS = list;
     saveCache(SONGS);
@@ -262,7 +290,6 @@ async function fetchSongs(silent=false){
 }
 
 async function apiPost(payload){
-  console.log('🔌 Enviando:', payload);
   const res=await fetch(API_URL,{
     method:'POST',
     redirect:'follow',
@@ -270,11 +297,19 @@ async function apiPost(payload){
     body:JSON.stringify(payload)
   });
   const text = await res.text();
-  console.log('📥 Resposta do servidor:', text);
   let data;
-  try{ data = JSON.parse(text); }catch(e){ throw new Error('Resposta inválida: ' + text); }
+  try{ data = JSON.parse(text); }catch(e){ throw new Error('Resposta inválida: ' + text.slice(0,200)); }
   if(!data.ok) throw new Error(data.error||'Erro desconhecido');
   return data;
+}
+
+function fileToBase64(file){
+  return new Promise((ok,fail)=>{
+    const r=new FileReader();
+    r.onload=()=>ok(String(r.result).split(',')[1]);
+    r.onerror=()=>fail(new Error('Falha ao ler o arquivo'));
+    r.readAsDataURL(file);
+  });
 }
 
 const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -335,10 +370,24 @@ function renderSong(){
   sheet.innerHTML=''; sheet.appendChild(frag);
 }
 
+function updateFileUI(s){
+  if(s && s.fileUrl){
+    downloadBtn.style.display='';
+    downloadBtn.title='Baixar ' + (s.fileName||'arquivo');
+    fileBarName.textContent=s.fileName||'Arquivo da música';
+    fileBarLink.href=s.fileUrl;
+    fileBar.classList.add('show');
+  } else {
+    downloadBtn.style.display='none';
+    fileBar.classList.remove('show');
+  }
+}
+
 function renderEmpty(){
   document.getElementById('songTitle').textContent='Teleprompter';
   document.getElementById('songMeta').textContent='';
   keyLabel.textContent='';
+  updateFileUI(null);
   sheet.innerHTML=`
     <div class="empty-box">
       <h3>Nenhuma música cadastrada ainda</h3>
@@ -361,6 +410,7 @@ function loadSong(i){
     speed=Math.min(200,Math.max(10,Number(s.speed)));
     speedSlider.value=speed; speedVal.textContent=speed;
   }
+  updateFileUI(s);
   renderSong(); updateKey(); window.scrollTo(0,0); updateProgress();
   document.querySelectorAll('#songList li').forEach(li=>{
     li.classList.toggle('active', li.dataset.id===s.id);
@@ -381,7 +431,7 @@ function buildList(filter=''){
     li.dataset.id=s.id;
     if(s.id===curId) li.classList.add('active');
     const meta=document.createElement('div'); meta.className='meta';
-    const st=document.createElement('strong'); st.textContent=s.title;
+    const st=document.createElement('strong'); st.textContent=s.title + (s.fileUrl ? ' 📎' : '');
     const ar=document.createElement('span'); ar.className='artist'; ar.textContent=s.artist||'';
     meta.appendChild(st); meta.appendChild(ar);
     li.appendChild(meta);
@@ -425,7 +475,9 @@ function toggleFullscreen(){ if(!document.fullscreenElement) document.documentEl
 const fTitle=document.getElementById('fTitle'), fArtist=document.getElementById('fArtist'),
   fKey=document.getElementById('fKey'), fSpeed=document.getElementById('fSpeed'),
   fContent=document.getElementById('fContent'), saveSongBtn=document.getElementById('saveSongBtn'),
-  deleteSongBtn=document.getElementById('deleteSongBtn');
+  deleteSongBtn=document.getElementById('deleteSongBtn'),
+  fFile=document.getElementById('fFile'), fFileInfo=document.getElementById('fFileInfo'),
+  fRemoveFile=document.getElementById('fRemoveFile'), removeFileWrap=document.getElementById('removeFileWrap');
 
 function openSongModal(song=null){
   stopScroll();
@@ -436,6 +488,10 @@ function openSongModal(song=null){
   fKey.value = song ? (song.key||'') : '';
   fSpeed.value = song && song.speed!=='' ? song.speed : '';
   fContent.value = song ? (song.content||'') : '';
+  fFile.value=''; fRemoveFile.checked=false;
+  const hasFile = !!(song && song.fileName);
+  fFileInfo.textContent = hasFile ? '📎 Arquivo atual: ' + song.fileName + ' (enviar outro substitui)' : '';
+  removeFileWrap.style.display = hasFile ? 'flex' : 'none';
   deleteSongBtn.style.display = song ? 'inline-block' : 'none';
   songModal.classList.add('open');
   setTimeout(()=>fTitle.focus(), 50);
@@ -455,8 +511,11 @@ document.getElementById('tagChips').onclick=e=>{
 saveSongBtn.onclick=async ()=>{
   const title=fTitle.value.trim();
   if(!title){ alert('Digite o título da música.'); fTitle.focus(); return; }
-  saveSongBtn.disabled=true; saveSongBtn.textContent='⏳ Gravando...';
+  const f=fFile.files[0];
+  if(f && f.size > MAX_FILE_MB*1024*1024){ alert('Arquivo muito grande (máx. '+MAX_FILE_MB+' MB).'); return; }
+  saveSongBtn.disabled=true; saveSongBtn.textContent = f ? '⏳ Enviando arquivo...' : '⏳ Gravando...';
   try{
+    const filePayload = f ? { name:f.name, mime:f.type, data: await fileToBase64(f) } : null;
     const res=await apiPost({
       action:'save',
       song:{
@@ -465,7 +524,9 @@ saveSongBtn.onclick=async ()=>{
         artist:fArtist.value.trim(),
         key:fKey.value.trim(),
         speed:fSpeed.value.trim(),
-        content:fContent.value
+        content:fContent.value,
+        file:filePayload,
+        removeFile:fRemoveFile.checked
       }
     });
     const list = Array.isArray(res) ? res : (res.songs || []);
@@ -473,7 +534,7 @@ saveSongBtn.onclick=async ()=>{
     else await fetchSongs(true);
     saveCache(SONGS);
     buildList(searchInput.value);
-    const idx = SONGS.findIndex(s=>s.title===title);
+    const idx = SONGS.findIndex(s=>s.id===res.savedId);
     loadSong(idx>=0 ? idx : 0);
     setStatus(`☁️ Salvo! (${SONGS.length} músicas)`,'ok');
     closeSongModal();
@@ -487,7 +548,7 @@ saveSongBtn.onclick=async ()=>{
 
 deleteSongBtn.onclick=async ()=>{
   if(!editingId) return;
-  if(!confirm('Excluir esta música da planilha?')) return;
+  if(!confirm('Excluir esta música da planilha (e o arquivo dela no Drive)?')) return;
   deleteSongBtn.disabled=true;
   try{
     const res=await apiPost({ action:'delete', id:editingId });
@@ -503,6 +564,7 @@ deleteSongBtn.onclick=async ()=>{
   }finally{ deleteSongBtn.disabled=false; }
 };
 
+downloadBtn.onclick=()=>{ const s=SONGS[current]; if(s && s.fileUrl) window.open(s.fileUrl,'_blank'); };
 playBtn.onclick=togglePlay;
 document.getElementById('backTop').onclick=()=>{ stopScroll(); window.scrollTo({top:0,behavior:'smooth'}); };
 speedSlider.oninput=()=>{ speed=Number(speedSlider.value); speedVal.textContent=speed; store.set('tp_speed',speed); };
