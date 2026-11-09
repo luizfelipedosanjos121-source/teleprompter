@@ -80,12 +80,16 @@ body.hide-chords .chord{visibility:hidden}
 .empty-box h3{color:var(--text);margin-bottom:8px}
 .empty-box button{margin-top:16px;background:var(--accent);color:#04263b;font-weight:700;padding:12px 20px;border-radius:10px;font-size:15px}
 
-#fileBar{display:none;align-items:center;gap:10px;background:var(--panel);border:1px solid #2b3543;
+#fileBar{display:none;align-items:center;flex-wrap:wrap;gap:10px;background:var(--panel);border:1px solid #2b3543;
   border-radius:12px;padding:10px 14px;margin-bottom:18px;font-size:14px}
 #fileBar.show{display:flex}
 #fileBar .fname{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
 #fileBar a{background:var(--ok);color:#04261a;font-weight:700;padding:7px 14px;border-radius:9px;text-decoration:none;font-size:13px;flex-shrink:0}
 
+#fileBar audio{display:none;flex-basis:100%;width:100%;height:38px}
+#fileBar.audio audio{display:block}
+#audioOpt{display:none;flex-basis:100%;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer}
+#fileBar.audio #audioOpt{display:flex}
 #playback{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;
   gap:12px;z-index:20;background:rgba(20,26,34,.95);border:1px solid #232b35;border-radius:40px;
   padding:8px 16px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
@@ -183,6 +187,8 @@ body.hide-chords .chord{visibility:hidden}
     <span>📎</span>
     <span class="fname" id="fileBarName"></span>
     <a id="fileBarLink" href="#" target="_blank" rel="noopener">⬇️ Baixar</a>
+    <audio id="player" controls preload="metadata"></audio>
+    <label id="audioOpt"><input type="checkbox" id="audioSync" checked> Tocar o áudio junto com a letra (botão ▶ do teleprompter)</label>
   </div>
   <div id="sheet"></div>
 </main>
@@ -305,7 +311,8 @@ function updateSelInfo(){
 }
 
 const toastEl=document.getElementById('toast');
-let autoTimer=null;
+const player=document.getElementById('player'), audioSync=document.getElementById('audioSync');
+let autoTimer=null, audioBad=false, audioDone=false, scrollDone=false;
 function toast(msg,ms=0){ toastEl.textContent=msg; toastEl.classList.add('show'); if(ms) setTimeout(()=>toastEl.classList.remove('show'),ms); }
 function cancelAuto(){ if(autoTimer){ clearInterval(autoTimer); autoTimer=null; } toastEl.classList.remove('show'); }
 function nextSelectedIndex(){
@@ -332,7 +339,7 @@ function playNext(){
   const hasSel=getSel().length>0;
   const n=hasSel ? nextSelectedIndex() : (current+1<SONGS.length ? current+1 : -1);
   if(n<0){ toast('Não há próxima música',2000); return; }
-  const wasPlaying=scrolling;
+  const wasPlaying=isPlaying();
   loadSong(n);
   if(wasPlaying) startScroll();
 }
@@ -473,7 +480,18 @@ function renderSong(){
   sheet.innerHTML=''; sheet.appendChild(frag);
 }
 
+function isAudio(s){ return !!(s && s.fileUrl && /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i.test(s.fileName||'')); }
+function hasAudio(){ return isAudio(SONGS[current]) && !audioBad && audioSync.checked; }
+function setupAudio(s){
+  audioBad=false; audioDone=false; scrollDone=false;
+  try{ player.pause(); }catch(e){}
+  const aud=isAudio(s);
+  fileBar.classList.toggle('audio',aud);
+  if(aud){ player.src=s.fileUrl; }
+  else if(player.getAttribute('src')){ player.removeAttribute('src'); player.load(); }
+}
 function updateFileUI(s){
+  setupAudio(s);
   if(s && s.fileUrl){
     downloadBtn.style.display='';
     downloadBtn.title='Baixar ' + (s.fileName||'arquivo');
@@ -558,21 +576,32 @@ function buildList(filter=''){
   updateSelInfo();
 }
 
+function isPlaying(){ return scrolling || (hasAudio() && !player.paused && !player.ended); }
 function startScroll(){
   if(!SONGS.length) return;
   const bottom=document.documentElement.scrollHeight-window.innerHeight;
-  if(window.scrollY>=bottom-1) window.scrollTo(0,0);
+  if(window.scrollY>=bottom-1){
+    window.scrollTo(0,0); scrollDone=false; audioDone=false;
+    if(isAudio(SONGS[current])) player.currentTime=0;
+  }
   scrolling=true; lastTs=null; playBtn.textContent='⏸';
+  if(hasAudio() && !audioDone && !player.ended){
+    const pr=player.play();
+    if(pr && pr.catch) pr.catch(()=>{ audioBad=true; toast('⚠️ Não consegui tocar o áudio (a letra segue sozinha)',3500); });
+  }
   requestAnimationFrame(tick); lockScreen();
 }
-function stopScroll(){ scrolling=false; playBtn.textContent='▶'; releaseLock(); }
-function togglePlay(){ cancelAuto(); scrolling?stopScroll():startScroll(); }
+function stopScroll(){ scrolling=false; playBtn.textContent='▶'; try{ player.pause(); }catch(e){} releaseLock(); }
+function togglePlay(){ cancelAuto(); isPlaying()?stopScroll():startScroll(); }
+function checkFinish(){
+  if(scrollDone && (!hasAudio() || audioDone)){ stopScroll(); onSongEnd(); }
+}
 function tick(ts){
   if(!scrolling) return;
   if(lastTs===null) lastTs=ts;
   const dt=Math.min((ts-lastTs)/1000,.1); lastTs=ts;
   window.scrollBy(0,speed*dt); updateProgress();
-  if(window.scrollY>=document.documentElement.scrollHeight-window.innerHeight-1){ stopScroll(); onSongEnd(); return; }
+  if(window.scrollY>=document.documentElement.scrollHeight-window.innerHeight-1){ scrolling=false; scrollDone=true; checkFinish(); return; }
   requestAnimationFrame(tick);
 }
 function updateProgress(){
@@ -689,6 +718,15 @@ document.getElementById('seqBtn').onclick=startSequence;
 document.getElementById('selAllBtn').onclick=()=>{ setSel(SONGS.map(s=>s.id)); buildList(searchInput.value); };
 document.getElementById('selNoneBtn').onclick=()=>{ setSel([]); buildList(searchInput.value); };
 toastEl.onclick=cancelAuto;
+audioSync.checked=store.get('tp_audio','1')==='1';
+audioSync.onchange=()=>{ store.set('tp_audio',audioSync.checked?'1':'0'); if(!audioSync.checked) player.pause(); };
+player.onended=()=>{ audioDone=true; checkFinish(); };
+player.onerror=()=>{
+  if(!player.getAttribute('src')) return;
+  audioBad=true;
+  toast('⚠️ Este áudio não pôde ser tocado aqui. Use ⬇️ para baixar.',4000);
+  if(scrollDone) checkFinish();
+};
 document.getElementById('backTop').onclick=()=>{ stopScroll(); window.scrollTo({top:0,behavior:'smooth'}); };
 speedSlider.oninput=()=>{ speed=Number(speedSlider.value); speedVal.textContent=speed; store.set('tp_speed',speed); };
 document.getElementById('fontUp').onclick=()=>changeFont(2);
