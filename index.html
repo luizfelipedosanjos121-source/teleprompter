@@ -30,7 +30,7 @@ button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 #keyLabel{min-width:30px;text-align:center;color:var(--chord);font-weight:700;font-size:14px}
 #progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
 
-/* Barra Lateral */
+/* Barra lateral */
 #sidebar{position:fixed;top:52px;left:0;bottom:0;width:280px;z-index:15;background:var(--panel);
   border-right:1px solid #232b35;transform:translateX(-105%);transition:transform .25s ease;
   display:flex;flex-direction:column}
@@ -213,7 +213,7 @@ body.hide-chords .chord{visibility:hidden}
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyK4SB6DiLbzppLJlbf2NzgfWBzTJTGK63pEDNic7xYP4q2Q9mYBOrZ3o-7nPequLyvPw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxLRuWdvK4SNlBpN8Ym2KKFKXleYIyEhvDO1lxjltmFjTclBq_sXgsxWg-NczEHPww-CA/exec";
 
 const store = {
   get(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} },
@@ -256,9 +256,7 @@ async function fetchSongs(silent=false){
     const res=await fetch(API_URL + '?t=' + Date.now(), { redirect:'follow' });
     const data=await res.json();
     
-    // Aceita tanto {songs:[...]} quanto {ok:true, songs:[...]}
     const list = Array.isArray(data) ? data : (data.songs || []);
-    
     SONGS = list;
     saveCache(SONGS);
     
