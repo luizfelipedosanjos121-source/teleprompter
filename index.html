@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎵 Teleprompter do Músico</title>
 <style>
-/* ═══════════════════════════════════════════
-   VARIÁVEIS & RESET
-   ═══════════════════════════════════════════ */
 :root{
   --bg:#0b0e13;--panel:#141a22;--text:#e8e8e8;
   --chord:#ffd166;--accent:#4cc2ff;--muted:#9aa4af;
@@ -19,9 +16,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,Ari
 button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
 input,textarea,select{font:inherit;color:inherit}
 
-/* ═══════════════════════════════════════════
-   BARRA SUPERIOR
-   ═══════════════════════════════════════════ */
 #toolbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;
   gap:10px;background:rgba(20,26,34,.96);backdrop-filter:blur(8px);
   padding:8px 12px;border-bottom:1px solid #232b35;flex-wrap:wrap}
@@ -37,9 +31,6 @@ input,textarea,select{font:inherit;color:inherit}
 #keyLabel{min-width:34px;text-align:center;color:var(--chord);font-weight:700}
 #progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:30}
 
-/* ═══════════════════════════════════════════
-   SIDEBAR
-   ═══════════════════════════════════════════ */
 #sidebar{position:fixed;top:52px;left:0;bottom:0;width:280px;z-index:15;background:var(--panel);
   border-right:1px solid #232b35;transform:translateX(-105%);transition:transform .25s;
   display:flex;flex-direction:column}
@@ -70,9 +61,6 @@ input,textarea,select{font:inherit;color:inherit}
 #apiStatus.err{color:var(--danger)}
 #apiStatus.offline{color:var(--muted)}
 
-/* ═══════════════════════════════════════════
-   CONTEÚDO / LETRA
-   ═══════════════════════════════════════════ */
 main{max-width:900px;margin:0 auto;padding:90px 24px 45vh}
 #sheet{font-size:var(--lyric-size);line-height:1.45;cursor:pointer}
 .lyric-line,.chord-line{white-space:pre-wrap;margin-bottom:.35em}
@@ -89,9 +77,6 @@ body.hide-chords .chord{visibility:hidden}
 .empty-state .icon{font-size:64px;margin-bottom:16px}
 .empty-state h3{color:var(--text);margin-bottom:8px}
 
-/* ═══════════════════════════════════════════
-   PLAYBACK
-   ═══════════════════════════════════════════ */
 #playback{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;
   align-items:center;gap:12px;z-index:20;background:rgba(20,26,34,.96);
   border:1px solid #232b35;border-radius:40px;padding:8px 16px;
@@ -103,9 +88,6 @@ body.hide-chords .chord{visibility:hidden}
 #speed{width:130px;accent-color:var(--accent)}
 #speedVal{font-size:12px;color:var(--muted);width:34px;text-align:center}
 
-/* ═══════════════════════════════════════════
-   MODAL (adicionar música)
-   ═══════════════════════════════════════════ */
 #modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;
   display:none;align-items:center;justify-content:center;padding:20px}
 #modalOverlay.open{display:flex}
@@ -122,8 +104,7 @@ body.hide-chords .chord{visibility:hidden}
 .form-group input,.form-group select,.form-group textarea{
   width:100%;padding:10px 12px;border-radius:8px;border:1px solid #2e3947;
   background:#0f141b;color:var(--text);outline:none;transition:.15s}
-.form-group input:focus,.form-group textarea:focus,.form-group select:focus{
-  border-color:var(--accent)}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent)}
 .form-group textarea{min-height:200px;resize:vertical;font-family:'Courier New',monospace;
   font-size:14px;line-height:1.6}
 .form-row{display:flex;gap:12px}
@@ -139,9 +120,6 @@ body.hide-chords .chord{visibility:hidden}
 .help-text{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
 .help-text code{background:#232b35;padding:2px 6px;border-radius:4px;font-size:11px}
 
-/* ═══════════════════════════════════════════
-   TOAST NOTIFICATION
-   ═══════════════════════════════════════════ */
 #toast{position:fixed;top:70px;right:20px;z-index:100;padding:12px 20px;
   border-radius:10px;font-size:14px;font-weight:600;display:none;
   box-shadow:0 4px 20px rgba(0,0,0,.4);transition:.3s;transform:translateX(120%)}
@@ -150,9 +128,6 @@ body.hide-chords .chord{visibility:hidden}
 #toast.error{background:var(--danger);color:#fff}
 #toast.info{background:var(--accent);color:#04263b}
 
-/* ═══════════════════════════════════════════
-   RESPONSIVO
-   ═══════════════════════════════════════════ */
 @media(max-width:640px){
   #speed{width:80px}
   main{padding:80px 16px 45vh}
@@ -164,7 +139,6 @@ body.hide-chords .chord{visibility:hidden}
 
 <div id="progress"></div>
 
-<!-- ═══ BARRA SUPERIOR ═══ -->
 <header id="toolbar">
   <button id="menuBtn" title="Lista de músicas">☰</button>
   <div class="song-info">
@@ -182,7 +156,6 @@ body.hide-chords .chord{visibility:hidden}
   </div>
 </header>
 
-<!-- ═══ SIDEBAR ═══ -->
 <aside id="sidebar">
   <h2>🎵 Músicas</h2>
   <div class="sidebar-actions">
@@ -200,12 +173,10 @@ body.hide-chords .chord{visibility:hidden}
   </div>
 </aside>
 
-<!-- ═══ CONTEÚDO ═══ -->
 <main>
   <div id="sheet"></div>
 </main>
 
-<!-- ═══ PLAYBACK ═══ -->
 <div id="playback">
   <button id="backTop" title="Início">⏮</button>
   <button id="playBtn" title="Play/Pause">▶</button>
@@ -213,7 +184,6 @@ body.hide-chords .chord{visibility:hidden}
   <span id="speedVal">60</span>
 </div>
 
-<!-- ═══ MODAL ADICIONAR MÚSICA ═══ -->
 <div id="modalOverlay">
   <div id="modal">
     <div class="modal-header">
@@ -264,18 +234,13 @@ body.hide-chords .chord{visibility:hidden}
   </div>
 </div>
 
-<!-- ═══ TOAST ═══ -->
 <div id="toast"></div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   🔧 CONFIGURAÇÃO
-   ------------------------------------------------------------
-   Cole aqui a URL do seu Apps Script (terminada em /exec).
-   Depois de fazer o Deploy no Google Apps Script, copie a URL.
+   🔧 URL DO APPS SCRIPT — JÁ CONFIGURADA
    ═══════════════════════════════════════════════════════════ */
-
-const API_URL = 'COLE_AQUI_SUA_URL_DO_APPS_SCRIPT';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyK4SB6DiLbzppLJlbf2NzgfWBzTJTGK63pEDNic7xYP4q2Q9mYBOrZ3o-7nPequLyvPw/exec';
 
 // ═══════════════════════════════════════════
 //   ESTADO
@@ -296,7 +261,6 @@ let speed = Number(store.get('tp_speed', 60));
 let fontSize = Number(store.get('tp_font', 26));
 let showChords = store.get('tp_chords','1')==='1';
 
-// Elementos
 const sidebar = document.getElementById('sidebar');
 const sheet = document.getElementById('sheet');
 const playBtn = document.getElementById('playBtn');
@@ -358,21 +322,12 @@ function loadCache() {
 // ═══════════════════════════════════════════
 
 async function loadAllSongs() {
-  if (!API_URL || API_URL.includes('COLE_AQUI')) {
-    setApiStatus('off', '⚠ Configure a URL do Apps Script no código');
-    songs = loadCache();
-    buildList();
-    if (songs.length) loadSong(0);
-    else showEmptyState();
-    return;
-  }
-
-  setApiStatus('off', '🔄 Sincronizando...');
+  setApiStatus('offline', '🔄 Sincronizando...');
 
   try {
     songs = await apiList();
     saveCache();
-    setApiStatus('ok', '✅ Conectado à planilha (' + songs.length + ' músicas)');
+    setApiStatus('ok', '✅ Conectado (' + songs.length + ' músicas)');
   } catch(err) {
     console.error('API Error:', err);
     songs = loadCache();
@@ -697,27 +652,22 @@ async function saveSong() {
   btn.textContent = '⏳ Salvando...';
 
   try {
-    // Salva na planilha via API
     const result = await apiAdd({ title, artist, key, content });
-
     if (result.error) throw new Error(result.error);
 
     showToast('✅ "' + title + '" salva na planilha!', 'success');
     closeModal();
 
-    // Recarrega a lista da planilha
     songs = await apiList();
     saveCache();
     buildList();
 
-    // Seleciona a nova música
     const newIdx = songs.findIndex(s => s.id === result.id);
     if (newIdx >= 0) loadSong(newIdx);
 
   } catch(err) {
     console.error('Erro ao salvar:', err);
 
-    // Salva localmente se a API falhar
     const localId = 'local_' + Date.now().toString(36);
     const newSong = { id: localId, title, artist, key, content, created: 'local' };
     songs.push(newSong);
@@ -725,7 +675,7 @@ async function saveSong() {
     buildList();
     loadSong(songs.length - 1);
 
-    showToast('⚠ Salvo localmente (API offline). Sync depois.', 'error', 4000);
+    showToast('⚠ Salvo localmente (API offline)', 'error', 4000);
     closeModal();
   } finally {
     btn.disabled = false;
@@ -740,7 +690,6 @@ async function confirmDelete(song, index) {
     if (song.id && !song.id.startsWith('local_')) {
       await apiDelete(song.id);
     }
-
     songs.splice(index, 1);
     saveCache();
     buildList();
@@ -750,7 +699,6 @@ async function confirmDelete(song, index) {
     else showEmptyState();
 
     showToast('🗑 "' + song.title + '" deletada', 'info');
-
   } catch(err) {
     showToast('⚠ Erro ao deletar: ' + err.message, 'error');
   }
@@ -760,7 +708,6 @@ async function confirmDelete(song, index) {
 //   EVENTOS
 // ═══════════════════════════════════════════
 
-// Toolbar
 document.getElementById('menuBtn').onclick = () => sidebar.classList.toggle('open');
 document.getElementById('fontUp').onclick = () => changeFont(2);
 document.getElementById('fontDown').onclick = () => changeFont(-2);
@@ -773,7 +720,6 @@ chordsBtn.onclick = () => {
 };
 document.getElementById('fsBtn').onclick = toggleFullscreen;
 
-// Playback
 playBtn.onclick = togglePlay;
 document.getElementById('backTop').onclick = () => {
   stopScroll();
@@ -785,7 +731,6 @@ speedSlider.oninput = () => {
   store.set('tp_speed', speed);
 };
 
-// Sidebar
 searchInput.oninput = () => buildList(searchInput.value);
 document.getElementById('addBtn').onclick = openModal;
 document.getElementById('refreshBtn').onclick = () => {
@@ -793,7 +738,6 @@ document.getElementById('refreshBtn').onclick = () => {
   loadAllSongs();
 };
 
-// Modal
 document.getElementById('modalClose').onclick = closeModal;
 document.getElementById('cancelBtn').onclick = closeModal;
 document.getElementById('saveBtn').onclick = saveSong;
@@ -801,15 +745,12 @@ modalOverlay.onclick = (e) => {
   if (e.target === modalOverlay) closeModal();
 };
 
-// Conteúdo
 sheet.onclick = () => {
   if (!window.getSelection().toString()) togglePlay();
 };
 
-// Scroll
 window.addEventListener('scroll', updateProgress);
 
-// Teclado
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' ||
       e.target.tagName === 'SELECT') return;
@@ -853,10 +794,8 @@ speedVal.textContent = speed;
 
 if (window.innerWidth >= 900) sidebar.classList.add('open');
 
-// Carrega músicas da planilha
 loadAllSongs();
 
-// Sync automático a cada 2 minutos
 setInterval(() => {
   if (!scrolling) loadAllSongs();
 }, 120000);
